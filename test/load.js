@@ -1,8 +1,8 @@
 // Loads the browser scripts into Node's globalThis so tests can use the same engine as the app.
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
-const ENGINE = ['js/engine/lexer.js', 'js/engine/parser.js', 'js/engine/functions.js', 'js/data/datasets.js', 'js/engine/evaluator.js'];
-const CONTENT = ['js/content/concepts.js', 'js/content/exercises-1.js', 'js/content/exercises-2.js', 'js/content/exercises-3.js'];
+const ENGINE = ['js/engine/lexer.js', 'js/engine/parser.js', 'js/engine/functions.js', 'js/data/datasets.js', 'js/engine/evaluator.js', 'js/data/datasets-tenant.js'];
+const CONTENT = ['js/content/concepts.js', 'js/content/exercises-1.js', 'js/content/exercises-2.js', 'js/content/exercises-3.js', 'js/content/exercises-4.js', 'js/content/exercises-5.js'];
 
 function load(files) {
   for (const f of files) {

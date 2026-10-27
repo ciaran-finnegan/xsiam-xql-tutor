@@ -5,7 +5,19 @@
   "private": true,
   "scripts": {
     "start": "node serve.js",
-    "test": "node test/run.js"
+    "test": "node test/run.js && node test/server.test.mjs",
+    "build": "node build.js",
+    "check": "node scripts/check-public.js",
+    "dev": "node build.js && npx wrangler dev",
+    "db:migrate": "npx wrangler d1 execute xql-tutor --remote --file=schema.sql",
+    "deploy": "node build.js && node scripts/check-public.js && npx wrangler deploy"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ciaran-finnegan/xsiam-xql-tutor"
   },
   "license": "MIT"
 }

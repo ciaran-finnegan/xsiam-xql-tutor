@@ -20,7 +20,8 @@
   // ---- routing ------------------------------------------------------------------------------
   function route() {
     const hash = location.hash.replace(/^#\/?/, '') || 'learn';
-    const [view, arg] = hash.split('/');
+    const [path, query] = hash.split('?');
+    const [view, arg] = path.split('/');
     document.querySelectorAll('nav a[data-view]').forEach((a) => a.classList.toggle('active', a.dataset.view === view));
     App.updateNavStats();
     switch (view) {
@@ -31,16 +32,20 @@
       case 'sandbox': return App.viewSandbox(arg ? decodeURIComponent(arg) : null);
       case 'reference': return App.viewReference(arg);
       case 'progress': return App.viewProgress();
+      case 'leaderboard': return App.viewLeaderboard ? App.viewLeaderboard() : App.viewLearn();
+      case 'account': return App.viewAccount ? App.viewAccount(arg, query) : App.viewLearn();
       default: return App.viewLearn();
     }
   }
   App.go = (hash) => { if (location.hash === '#' + hash) route(); else location.hash = hash; };
+  App.setView = setView;
+  App.stat = stat;
   App.updateNavStats = () => {
     const s = App.srs.stats(App.exercises);
     const el = document.getElementById('navstats');
     if (el) el.innerHTML = `<span title="cards due for review">${s.due} due</span><span title="day streak">🔥 ${s.streak}</span>`;
     const badge = document.getElementById('duebadge');
-    if (badge) { badge.textContent = s.due; badge.style.display = s.due ? '' : 'none'; }
+    if (badge) { badge.textContent = s.due; badge.classList.toggle('hidden', !s.due); }
   };
 
   // ---- learn view ------------------------------------------------------------------------------
@@ -50,7 +55,7 @@
       stat('Cards mastered', `${s.mastered} / ${s.total}`), stat('Due for review', s.due), stat('Answered today', s.todayCount), stat('Day streak', s.streak), stat('Recent accuracy', s.accuracy == null ? '–' : Math.round(s.accuracy * 100) + '%'));
     const next = App.nextLearnTarget();
     const hero = h('section', { class: 'hero' },
-      h('div', null, h('h1', null, 'Learn Cortex XQL by reading and writing queries'), h('p', { class: 'lead' }, 'Twelve short units. Each one moves from an annotated worked example, to predicting output, to spotting bugs and ordering stages, to writing queries that are graded by running them against sample endpoint data. Cards you struggle with come back sooner.')),
+      h('div', null, h('h1', null, 'Learn Cortex XQL by reading and writing queries'), h('p', { class: 'lead' }, `${App.concepts.length} short units: the language first, then the log sources a real SOC hunts in, on a fictional company's data (NGFW and Prisma Access, AWS CloudTrail and VPC flows, Azure and Entra ID, GitHub, Snowflake, alerts and the Cortex Data Model). Each unit moves from an annotated worked example, to predicting output, to spotting bugs and ordering stages, to writing queries that are graded by running them against sample data. Cards you struggle with come back sooner.`)),
       h('div', { class: 'heroactions' },
         next ? h('button', { class: 'btn primary big', type: 'button', onClick: () => App.startUnit(next.concept.id, next.index) }, UI.icon('bolt'), ` ${s.seen ? 'Continue' : 'Start'}: ${next.concept.title}`) : App.exercises.length ? h('div', { class: 'done' }, 'You have worked through every card. Keep reviewing to retain it.') : h('div', { class: 'muted' }, 'No exercise files loaded. Check that js/content/exercises-*.js exist.'),
         s.due ? h('button', { class: 'btn', type: 'button', onClick: () => App.go('review') }, `Review ${s.due} due card${s.due === 1 ? '' : 's'}`) : null));
@@ -184,6 +189,7 @@
       if (out.correct || !out.retry) {
         feedback.append(h('div', { class: 'explain' }, h('div', { class: 'label' }, 'Why'), UI.rich(ex.explanation, 'div'), ex.docs && ex.docs.length ? h('div', { class: 'doclinks' }, 'Reference: ', ex.docs.map((d, i) => [i ? ' · ' : '', h('a', { href: d.url, target: '_blank', rel: 'noopener' }, d.title, ' ', UI.icon('link'))])) : null));
         finish(out, false);
+        if (out.correct && App.account) App.account.submit(ex, out.answer);
       } else {
         feedback.append(h('div', { class: 'muted small' }, `Attempt ${attempts}. Edit your query and check again, or show the solution.`));
       }
@@ -233,20 +239,20 @@
     let current = preferred && XQL.DATASETS[preferred[1].toLowerCase()] ? preferred[1].toLowerCase() : 'xdr_data';
     const body = h('div', { class: 'peekbody' });
     const tabs = h('div', { class: 'tabs' });
+    let evFilter = ''; // event-type filter for xdr_data; declared before render() uses it
     function render() {
       tabs.innerHTML = ''; body.innerHTML = '';
-      names.forEach((n) => tabs.append(h('button', { class: 'tab' + (n === current ? ' active' : ''), type: 'button', onClick: () => { current = n; render(); } }, n)));
+      names.forEach((n) => tabs.append(h('button', { class: 'tab' + (n === current ? ' active' : ''), type: 'button', onClick: () => { current = n; evFilter = ''; render(); } }, n)));
       const ds = XQL.DATASETS[current];
       const filterSel = current === 'xdr_data' ? h('select', { onChange: (e) => { evFilter = e.target.value; renderTable(); } }, [['', 'all event types'], ['1', 'PROCESS'], ['2', 'NETWORK'], ['3', 'FILE'], ['4', 'REGISTRY'], ['6', 'LOAD_IMAGE']].map(([v, l]) => h('option', { value: v, selected: evFilter === v }, l))) : null;
       const tbl = h('div');
-      let evFilter = '';
       function renderTable() {
         const rows = evFilter ? ds.rows.filter((r) => String(r.event_type) === evFilter) : ds.rows;
-        const cols = current === 'xdr_data' ? ds.columns.filter((c) => rows.some((r) => r[c] != null)) : ds.columns;
+        const cols = ds.columns.filter((c) => rows.some((r) => r[c] != null)); // sparse schemas: hide columns that are empty for the selection
         tbl.innerHTML = ''; tbl.append(UI.table({ columns: cols, rows }, { max: 100 }));
       }
       renderTable();
-      body.append(h('p', { class: 'muted' }, ds.description, ` ${ds.rows.length} rows. The sandbox clock is frozen at ${XQL.formatTime(XQL.NOW)}.`), filterSel ? h('div', { class: 'tools' }, 'Show: ', filterSel, h('span', { class: 'muted small' }, 'columns that are empty for the selection are hidden')) : null, tbl,
+      body.append(h('p', { class: 'muted' }, ds.description, ` ${ds.rows.length} rows. The sandbox clock is frozen at ${XQL.formatTime(XQL.NOW)}. Columns that are empty for every shown row are hidden.`), filterSel ? h('div', { class: 'tools' }, 'Show: ', filterSel) : null, tbl,
         h('details', null, h('summary', null, 'Field descriptions'), h('dl', { class: 'fields' }, ds.columns.map((c) => [h('dt', null, c), h('dd', null, (ds.fieldDocs && ds.fieldDocs[c]) || '')]))));
     }
     render();
@@ -273,6 +279,18 @@
     ['Failed logons from Windows logs', 'dataset = microsoft_windows_raw\n| filter event_id = 4625\n| alter user = json_extract_scalar(event_data, "$.TargetUserName"), src_ip = event_data -> IpAddress, workstation = event_data -> WorkstationName\n| comp count() as failures, min(_time) as first_fail, max(_time) as last_fail by user, src_ip, workstation\n| sort desc failures'],
     ['Firewall: big uploads', 'dataset = panw_ngfw_traffic_raw\n| filter action = "allow" and bytes_sent > 1000000\n| alter mb_sent = round(divide(bytes_sent, 1048576))\n| fields _time, source_ip, dest_ip, dest_port, app, rule_matched, mb_sent\n| sort desc mb_sent'],
     ['Top destinations with GeoIP', 'dataset = xdr_data\n| filter event_type = ENUM.NETWORK and action_country != null\n| iploc action_remote_ip loc_country as country, loc_city as city\n| top 5 action_remote_ip\n| sort desc TOP_COUNT'],
+    ['NGFW: threats that were only alerted', 'dataset = panw_ngfw_threat_raw\n| filter severity in ("high", "critical") and action = "alert"\n| fields _time, source_ip, dest_ip, dest_port, threat_name, threat_category, rule_matched, log_source_name\n| sort desc _time'],
+    ['GlobalProtect: failed VPN logins by user and country', 'dataset = panw_ngfw_globalprotect_raw\n| filter event_id = "portal-auth" and status = "failure"\n| comp count() as failures, values(public_ip) as sources, max(_time) as last_seen by source_user, source_region, auth_method\n| sort desc failures'],
+    ['Prisma Access: what a VPN session reached', 'dataset = panw_ngfw_traffic_raw\n| filter is_prisma_mobile = true\n| fields _time, source_user, source_ip, dest_ip, dest_port, app, action, bytes_sent\n| join type = left (dataset = panw_ngfw_globalprotect_raw | filter event_id = "gateway-connected" | fields private_ip, public_ip, source_region) as gp gp.private_ip = source_ip\n| sort asc _time'],
+    ['CloudTrail: everything done with the stolen key', 'dataset = amazon_aws_raw\n| filter _log_type = "cloudtrail" and sourceIPAddress = "192.0.2.77"\n| alter identity = userIdentity -> type, who = coalesce(userIdentity -> userName, userIdentity -> type)\n| fields _time, awsRegion, eventSource, eventName, who, errorCode, userAgent\n| sort asc _time'],
+    ['CloudTrail: console logins and MFA', 'dataset = amazon_aws_raw\n| filter _log_type = "cloudtrail" and eventName = "ConsoleLogin"\n| alter who = coalesce(userIdentity -> userName, userIdentity -> type), result = responseElements -> ConsoleLogin, mfa = additionalEventData -> MFAUsed\n| fields _time, recipientAccountId, who, sourceIPAddress, result, mfa\n| sort asc _time'],
+    ['VPC flow logs: scanner against the ALB (requests only)', 'dataset = amazon_aws_raw\n| filter _log_type = "flowlogs" and dstaddr = "10.240.34.41"\n| comp count() as flows, values(dstport) as ports, sum(bytes) as bytes by srcaddr, action\n| sort desc flows'],
+    ['Entra: sign-in failures by user and error code', 'dataset = msft_azure_ad_raw\n| alter code = to_integer(status -> errorCode), country = location -> countryOrRegion\n| filter code != 0\n| comp count() as failures, values(ipAddress) as sources, max(_time) as last_fail by userPrincipalName, code, country\n| sort desc failures'],
+    ['Entra audit: directory changes without provisioning noise', 'dataset = msft_azure_ad_audit_raw\n| filter loggedByService != "Azure AD Cloud Sync"\n| alter by_user = initiatedBy -> user.userPrincipalName, by_app = initiatedBy -> app.displayName, from_ip = initiatedBy -> user.ipAddress\n| fields _time, activityDisplayName, category, result, by_user, by_app, from_ip\n| sort desc _time'],
+    ['Azure NSG: dedup duplicate deliveries before counting', 'dataset = msft_azure_flowlogs_raw\n| dedup sourceAddress, destinationAddress, sourcePort, destinationPort, startTime\n| comp count() as flows, sum(bytesSent) as bytes_sent by sourceAddress, destinationAddress, destinationPort, deviceAction, nsgRuleName\n| sort desc bytes_sent'],
+    ['Alerts: retroactive IOC alerts (arrays need to_string)', 'dataset = alerts\n| filter alert_source = "XDR_IOC"\n| alter lip = to_string(local_ip), rip = to_string(remote_ip), lag_hours = timestamp_diff(_time, event_timestamp, "HOUR")\n| comp count() as alerts, min(event_timestamp) as first_event, max(lag_hours) as max_lag_hours by alert_name, lip, rip\n| sort desc alerts'],
+    ['Data model: failed logins for one user across every source', 'datamodel dataset = *\n| filter xdm.event.type = "AUTHENTICATION" and xdm.event.outcome = XDM_CONST.OUTCOME_FAILED\n    and lowercase(xdm.source.user.username) contains "s.hudson"\n| fields _time, _dataset, xdm.source.ipv4, xdm.source.location.country, xdm.auth.auth_method, xdm.target.resource.name, xdm.event.outcome_reason\n| sort asc _time'],
+    ['Data model: one target IP across firewall, VPC and NSG flows', 'datamodel dataset in (panw_ngfw_traffic_raw, amazon_aws_raw, msft_azure_flowlogs_raw, xdr_data)\n| filter xdm.target.ipv4 = "192.0.2.45"\n| comp count() as flows, sum(xdm.source.sent_bytes) as bytes_out, values(xdm.source.ipv4) as sources by _dataset\n| sort desc bytes_out'],
   ];
   App.loadInSandbox = (q) => { App.go('sandbox/' + encodeURIComponent(q)); };
   App.viewSandbox = (initial) => {

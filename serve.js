@@ -16,16 +16,36 @@ const types = {
   '.ico': 'image/x-icon'
 };
 
-http.createServer((req, res) => {
+const server = http.createServer((req, res) => {
   let urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
   if (urlPath.endsWith('/')) urlPath += 'index.html';
   const filePath = path.normalize(path.join(root, urlPath));
   if (!filePath.startsWith(root)) { res.writeHead(403); return res.end('Forbidden'); }
   fs.readFile(filePath, (err, data) => {
     if (err) { res.writeHead(404); return res.end('Not found'); }
-    res.writeHead(200, { 'Content-Type': types[path.extname(filePath)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
+    // the same security headers that _headers applies on Cloudflare, so CSP problems show up locally
+    res.writeHead(200, {
+      'Content-Type': types[path.extname(filePath)] || 'application/octet-stream',
+      'Cache-Control': 'no-store',
+      'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'; manifest-src 'self'",
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    });
     res.end(data);
   });
-}).listen(port, '127.0.0.1', () => {
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${port} is already in use. The tutor may already be running at http://127.0.0.1:${port}/`);
+    console.error(`To start a second copy on another port: node serve.js ${port + 1}`);
+    process.exit(1);
+  }
+  throw err;
+});
+
+server.listen(port, '127.0.0.1', () => {
   console.log(`XQL Tutor running at http://127.0.0.1:${port}/  (Ctrl+C to stop)`);
 });

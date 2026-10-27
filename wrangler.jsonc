@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "xql-tutor",
+  "main": "server/worker.js",
+  "compatibility_date": "2026-10-20",
+  // The Cloudflare account that owns the riskscope-consulting.com zone. Change this if you fork and host elsewhere.
+  "account_id": "6a9e4591f2bb3711c87592659eeee480",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "xql.riskscope-consulting.com", "custom_domain": true }],
+  "assets": { "directory": "./dist", "binding": "ASSETS", "run_worker_first": ["/api/*"], "not_found_handling": "none" },
+  "d1_databases": [{ "binding": "DB", "database_name": "xql-tutor", "database_id": "d98ca81f-3c0e-412c-91a6-e1e7ecdccdd4" }],
+  // Email one-time codes. Sending only works once a domain is onboarded to Email Sending and EMAIL_FROM is set.
+  "send_email": [{ "name": "EMAIL" }],
+  "vars": { "APP_ORIGIN": "https://xql.riskscope-consulting.com" },
+  "observability": { "enabled": true }
+}

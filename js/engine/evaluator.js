@@ -18,7 +18,7 @@
   for (const f of Object.keys(ENUMS)) { if (f === 'event_sub_type') continue; ENUM_NAMES[f] = {}; for (const [k, v] of Object.entries(ENUMS[f])) ENUM_NAMES[f][v] = k; }
   XQL.enumName = (field, value) => (ENUM_NAMES[field] && ENUM_NAMES[field][value]) || null;
 
-  const SYSTEM_FIELDS = ['_time', '_product', '_vendor', '_tag', '_id'];
+  const SYSTEM_FIELDS = ['_time', '_insert_time', '_product', '_vendor', '_tag', '_id'];
   const PRESETS = {
     xdr_process: { dataset: 'xdr_data', filter: (r) => r.event_type === 1 },
     xdr_file: { dataset: 'xdr_data', filter: (r) => r.event_type === 3 },
@@ -95,7 +95,14 @@
       case 'str': return node.v;
       case 'null': return null;
       case 'duration': return XQL.durationMs(node.v.value, node.v.unit);
-      case 'enum': return { __enum: node.name };
+      case 'enum': {
+        if (node.xdmConst) {
+          const table = XQL.XDM_CONST || {};
+          if (!(node.name in table)) { const s = XQL.suggest(node.name, Object.keys(table)); throw new XQLError(`XDM_CONST.${node.name} is not known to the sandbox.${s ? ` Did you mean XDM_CONST.${s}?` : ''} Known: ${Object.keys(table).join(', ')}`, node.pos); }
+          return table[node.name];
+        }
+        return { __enum: node.name };
+      }
       case 'field': return resolveFieldValue(node, row, env);
       case 'call': return evalCall(node, row, env, ctx);
       case 'neg': { const v = evalExpr(node.e, row, env, ctx); if (v == null) return null; if (typeof v !== 'number') throw new XQLError('Unary minus needs a number'); return -v; }
@@ -337,9 +344,34 @@
     }
     let rows = ds.rows.map((r) => Object.assign({}, r));
     if (presetFilter) rows = rows.filter(presetFilter);
+    if (mode === 'preset' && PRESETS[key].extraRows) rows = rows.concat(PRESETS[key].extraRows.map((r) => Object.assign({}, r))).sort((a, b) => XQL.compare(a._time, b._time));
     const tf = timeframeBounds(ctx.timeframe, ctx.now);
     if (tf && rows.length && rows[0]._time !== undefined) rows = rows.filter((r) => r._time != null && Number(r._time) >= tf.start && Number(r._time) <= tf.end);
     return makeTable(ds.columns, rows, { datasetName: key });
+  }
+
+  // datamodel: the Cortex Data Model view of one, several or all mapped datasets
+  function loadDatamodel(st, ctx) {
+    const maps = XQL.XDM_MAPPINGS || {};
+    const names = st.names ? st.names.map((n) => String(n).toLowerCase()) : Object.keys(maps);
+    const rows = [];
+    for (const name of names) {
+      const ds = ctx.datasets[name];
+      if (!ds) { const s = XQL.suggest(name, Object.keys(ctx.datasets)); throw new XQLError(`Dataset '${name}' does not exist in the sandbox.${s ? ` Did you mean '${s}'?` : ''}`, st.start); }
+      const map = maps[name];
+      if (!map) throw new XQLError(`'${name}' has no data model mapping in the sandbox. Mapped datasets: ${Object.keys(maps).join(', ')}`, st.start);
+      for (const r of ds.rows) {
+        const x = map(r);
+        if (!x) continue;
+        const o = { _time: r._time, _dataset: name, _product: r._product == null ? null : r._product, _vendor: r._vendor == null ? null : r._vendor };
+        for (const f of XQL.XDM_FIELDS) o[f] = f in x ? x[f] : null;
+        rows.push(o);
+      }
+    }
+    rows.sort((a, b) => XQL.compare(a._time, b._time));
+    const tf = timeframeBounds(ctx.timeframe, ctx.now);
+    const kept = tf ? rows.filter((r) => r._time != null && Number(r._time) >= tf.start && Number(r._time) <= tf.end) : rows;
+    return makeTable(['_time', '_dataset', ...XQL.XDM_FIELDS], kept, { datasetName: 'datamodel' });
   }
 
   function stageFilter(st, table, ctx) {
@@ -368,6 +400,13 @@
     }
     const selected = []; // [{src, out}]
     for (const it of st.items) {
+      const fs = /^fieldset\.(.+)$/i.exec(it.name);
+      if (fs) {
+        const list = (XQL.XDM_FIELDSETS || {})[fs[1].toLowerCase()];
+        if (!list) throw new XQLError(`Unknown fieldset '${it.name}'. The sandbox knows: ${Object.keys(XQL.XDM_FIELDSETS || {}).map((k) => 'fieldset.' + k).join(', ')}`, st.start);
+        for (const f of list) if (allCols.includes(f)) selected.push({ src: f, out: f });
+        continue;
+      }
       if (it.wildcard) {
         const re = new RegExp('^' + it.name.replace(/[.+^${}()|[\]\\?]/g, '\\$&').replace(/\*/g, '.*') + '$', 'i');
         const hits = allCols.filter((c) => re.test(c));
@@ -425,6 +464,8 @@
     const groups = new Map();
     for (const r of table.rows) {
       const keyVals = byCols.map((c) => r[c]);
+      const arrCol = byCols.find((c, i) => Array.isArray(keyVals[i]));
+      if (arrCol) throw new XQLError(`comp cannot group by '${arrCol}' because it is an array field (the product fails with "XQL query failed"). Convert it first: alter ${arrCol}_s = to_string(${arrCol}) and group by that, or arrayexpand ${arrCol}.`, st.start);
       const key = JSON.stringify(keyVals.map((v) => (v instanceof XTime ? 't' + v.ms : typeof v === 'string' && !ctx.caseSensitive ? v.toLowerCase() : v)));
       let g = groups.get(key);
       if (!g) { g = { keyVals, rows: [] }; groups.set(key, g); }
@@ -695,9 +736,10 @@
   // ---- query execution ----------------------------------------------------------
   function applyStage(st, table, ctx, index, total, sourceIndex) {
     if (st.unsupported) throw new XQLError(`The '${st.kind}' stage is not executed by the tutor sandbox (it is covered in the reading exercises instead).`, st.start);
-    if (index > sourceIndex && (st.kind === 'dataset')) throw new XQLError(`'${st.src.split(/\s/)[0]}' must be the first stage (after an optional config). To combine datasets use union or join.`, st.start);
+    if (index > sourceIndex && (st.kind === 'dataset' || st.kind === 'datamodel')) throw new XQLError(`'${st.src.split(/\s/)[0]}' must be the first stage (after an optional config). To combine datasets use union or join.`, st.start);
     switch (st.kind) {
       case 'config': ctx.caseSensitive = !!st.settings.case_sensitive; ctx.timeframe = st.settings.timeframe || null; return null;
+      case 'datamodel': return loadDatamodel(st, ctx);
       case 'dataset': {
         if (st.mode === 'in') { let t = null; for (const n of st.names) { const d = loadDataset(n, 'dataset', ctx, st.start); t = t ? unionTables(t, d) : d; } return t; }
         return loadDataset(st.names[0], st.mode, ctx, st.start);
@@ -734,7 +776,8 @@
   function executeQuery(ast, ctx) {
     let stages = ast.stages;
     const first = stages[0];
-    const startsWithSource = first && (first.kind === 'dataset' || (first.kind === 'config' && stages[1] && stages[1].kind === 'dataset') || first.kind === 'search');
+    const isSource = (s) => s && (s.kind === 'dataset' || s.kind === 'datamodel' || s.kind === 'search');
+    const startsWithSource = isSource(first) || (first && first.kind === 'config' && isSource(stages[1]));
     if (!startsWithSource) {
       const insertAt = first && first.kind === 'config' ? 1 : 0;
       stages = stages.slice();
@@ -746,7 +789,7 @@
     let sortedBy = null; // src of the most recent sort whose order is still intact
     for (let i = 0; i < stages.length; i++) {
       const st = stages[i];
-      if (st.kind !== 'config' && st.kind !== 'dataset' && !table) throw new XQLError(`'${st.kind}' needs data to work on. Put a dataset stage first.`, st.start);
+      if (st.kind !== 'config' && st.kind !== 'dataset' && st.kind !== 'datamodel' && !table) throw new XQLError(`'${st.kind}' needs data to work on. Put a dataset stage first.`, st.start);
       const before = table ? table.rows.length : 0;
       let t = applyStage(st, table, ctx, i, stages.length, sourceIndex);
       if (t && ORDER_LOSING[st.kind]) {

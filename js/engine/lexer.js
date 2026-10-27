@@ -14,7 +14,7 @@
   XQL.XQLError = XQLError;
 
   // Longest operators first so "!~=" wins over "!=" and "->" over "-".
-  const OPS = ['!~=', '~=', '!=', '<=', '>=', '->', '|', ',', '(', ')', '=', '<', '>', '+', '-', '*', '/', '[', ']', '{', '}'];
+  const OPS = ['!~=', '~=', '!=', '<=', '>=', '->', '|', ',', '(', ')', '=', '<', '>', '+', '-', '*', '/', '[', ']', '{', '}', '.'];
 
   function unescapeTriple(raw) {
     return raw.replace(/\\(n|t|r|\\|")/g, (m, c) => ({ n: '\n', t: '\t', r: '\r', '\\': '\\', '"': '"' })[c]);

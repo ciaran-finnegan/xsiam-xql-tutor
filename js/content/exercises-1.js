@@ -316,7 +316,7 @@ dataset = xdr_data
 | filter event_type = ENUM.NETWORK
 | filter dns_query_name = null and action_country != null
 | fields agent_hostname, actor_process_image_name, action_remote_ip, action_country`,
-      explanation: 'Test for a missing value with `= null` and for a present one with `!= null`. All 6 hits are connections to the C2 185.220.101.45, from four different hosts.',
+      explanation: 'Test for a missing value with `= null` and for a present one with `!= null`. All 6 hits are connections to the C2 192.0.2.45, from four different hosts.',
       docs: [DOC.filter], tags: ['null'],
     },
     {
@@ -707,7 +707,7 @@ dataset = xdr_data
 | fields ___
 | sort asc _time`,
       ],
-      explanation: '`~=` matches a regular expression anywhere in the value, which suits a URL buried in a longer command line, but unlike `=` and `contains` it is case-sensitive: the `(?i)` prefix is what makes `HTTP://` match too. All five hits point at 185.220.101.45: the web server first (23 Oct), then the finance, Mac and sales hosts on 26 Oct.',
+      explanation: '`~=` matches a regular expression anywhere in the value, which suits a URL buried in a longer command line, but unlike `=` and `contains` it is case-sensitive: the `(?i)` prefix is what makes `HTTP://` match too. All five hits point at 192.0.2.45: the web server first (23 Oct), then the finance, Mac and sales hosts on 26 Oct.',
       docs: [DOC.operators], tags: ['regex', 'c2'],
     },
     {
@@ -948,7 +948,7 @@ dataset = xdr_data
 | sort asc action_external_hostname
 | limit 1`,
       prompt: 'What is `action_external_hostname` in the first row?',
-      choices: ['185.220.101.45', 'get.docker.com', 'null (no hostname)', 'WS-FIN-042'],
+      choices: ['192.0.2.45', 'get.docker.com', 'null (no hostname)', 'WS-FIN-042'],
       answer: 2,
       check: { kind: 'cell', row: 0, column: 'action_external_hostname', value: 'null' },
       explanation: 'In the sandbox, rows with no value come first in an ascending sort, so two nmap scan targets with no hostname lead the list. The vendor reference does not document where nulls sort, so add `filter action_external_hostname != null` before the sort whenever you want real values at the top.',
@@ -974,10 +974,10 @@ dataset = xdr_data
     },
     {
       id: 'sort-limit-06', concept: 'sort-limit', type: 'parsons', difficulty: 3, title: 'Latest C2 contacts',
-      task: 'Arrange the lines to list the 4 most recent connections to the C2 address 185.220.101.45, newest first, with time, host and remote port.',
+      task: 'Arrange the lines to list the 4 most recent connections to the C2 address 192.0.2.45, newest first, with time, host and remote port.',
       solution: Q`dataset = xdr_data
 | filter event_type = ENUM.NETWORK
-| filter action_remote_ip = "185.220.101.45"
+| filter action_remote_ip = "192.0.2.45"
 | fields _time, agent_hostname, action_remote_port
 | sort desc _time
 | limit 4`,
@@ -1004,15 +1004,15 @@ dataset = xdr_data
     },
     {
       id: 'sort-limit-08', concept: 'sort-limit', type: 'cloze', difficulty: 3, title: 'First contact with the C2',
-      task: 'When did any host first talk to 185.220.101.45? Fill in the sort direction and the limit so that only the earliest connection is returned.',
+      task: 'When did any host first talk to 192.0.2.45? Fill in the sort direction and the limit so that only the earliest connection is returned.',
       template: Q`dataset = xdr_data
-| filter event_type = ENUM.NETWORK and action_remote_ip = "185.220.101.45"
+| filter event_type = ENUM.NETWORK and action_remote_ip = "192.0.2.45"
 | fields _time, agent_hostname, actor_process_image_name, action_remote_port
 | sort ___ _time
 | limit ___`,
       answers: [['asc'], ['1']],
       solution: Q`dataset = xdr_data
-| filter event_type = ENUM.NETWORK and action_remote_ip = "185.220.101.45"
+| filter event_type = ENUM.NETWORK and action_remote_ip = "192.0.2.45"
 | fields _time, agent_hostname, actor_process_image_name, action_remote_port
 | sort asc _time
 | limit 1`,

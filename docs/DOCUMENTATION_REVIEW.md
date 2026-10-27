@@ -68,3 +68,16 @@ What exists for learning Cortex XQL, what each source is good for, and how it sh
 - Parsons problems: Ericson et al. (2022) systematic literature review; Hou, Ericson & Wang (2023) on Parsons problems as scaffolding for code writing; Zhi et al. on efficiency.
 - PRIMM (Predict, Run, Investigate, Modify, Make): Sentance, Waite & Kallia (2019).
 - Feedback: Hattie & Timperley (2007).
+
+## 5. Cloud, identity and network sources (units 13-17)
+
+Vendor pages read for units 13-17, and what each settled:
+
+- **Ingest audit logs from AWS CloudTrail** (Amazon S3 collector): CloudTrail is stored in `amazon_aws_raw`; with Enhanced Cloud Protection the events are also normalised into the `cloud_audit_logs` dataset. The in-app XQL Library has the example queries.
+- **Ingest network flow logs from Amazon S3**: the custom log format must include `srcaddr`, `dstaddr`, `pkt-srcaddr`, `pkt-dstaddr` and `flow-direction`; with "Normalize and enrich flow logs" the records become network connection stories queryable in `xdr_data` through `preset = network_story`. That is the mechanism behind the flow-log rows with `agent_hostname` null and `agent_id = eni-...` that the Acme Life SOC meets in `xdr_data`.
+- **Ingest logs from Microsoft Azure Event Hub**: activity and resource logs land in `msft_azure_raw`; Entra sign-in and audit categories (SignInLogs, NonInteractiveUserSignInLogs, ServicePrincipalSignInLogs, AuditLogs) can come through Event Hub but the vendor recommends the Office 365 collector for them, which produces `msft_azure_ad_raw` and `msft_azure_ad_audit_raw`.
+- **Ingest network flow logs from Microsoft Azure Network Watcher**: an Azure Function ships NSG or VNet flow logs; the collector's vendor/product setting names the dataset (the tenant uses `msft_azure_flowlogs_raw`).
+- **Ingest data from Prisma Access**: Prisma Access logs arrive in the same `panw_ngfw_<type>_raw` datasets as the on-prem firewall, distinguished by the `is_prisma_mobile` field.
+- **XSIAM Data Model schema**, **XDM fields for mapping network events** and **XDM fields for mapping authentication events**: the `xdm.*` field tree (`xdm.source.ipv4`, `xdm.target.port`, `xdm.event.outcome`, `xdm.network.rule`, `xdm.source.user.username`, `xdm.auth.auth_method`, ...), the `XDM_CONST.*` constants (`OUTCOME_SUCCESS`, `OUTCOME_FAILED`) and the aliases. Query syntax, confirmed against the XSIAM Analyst exam material and marketplace packs: `datamodel dataset = <name>` or `datamodel dataset = *`, then ordinary stages on `xdm.*` fields, with `fields fieldset.xdm_network` for the standard columns.
+
+Practitioner notes from operating XSIAM in production (published with the open-source `cortex-xsiam-mcp-gateway` catalogue) that became cards: the request/reply misread in VPC flow logs (an ALB's reply record reads as outbound traffic), retroactive IOC alerts matched against a day of stored flow logs, `alerts` network fields being arrays that `comp` cannot group by, enum-backed fields that match with `contains` but not `=`, grouping on the Entra `status` JSON being far slower than grouping on short fields, Azure NSG flow records delivered twice, Snowflake's upper-case fields and missing `_reporting_device_name`, GitHub EMU actor naming, and the corporate office and VPN egress addresses that must never be read as attacker sources.

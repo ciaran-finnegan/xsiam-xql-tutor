@@ -13,11 +13,13 @@
     <a class="brand" href="#learn"><span class="logo">|</span> XQL Tutor <span class="muted small" id="cardcount"></span></a>
     <nav>
       <a href="#learn" data-view="learn">Learn</a>
-      <a href="#review" data-view="review">Review <span class="badge" id="duebadge" style="display:none">0</span></a>
+      <a href="#review" data-view="review">Review <span class="badge hidden" id="duebadge">0</span></a>
       <a href="#sandbox" data-view="sandbox">Sandbox</a>
       <a href="#reference" data-view="reference">Reference</a>
       <a href="#progress" data-view="progress">Progress</a>
+      <a href="#leaderboard" data-view="leaderboard" class="hidden">Leaderboard</a>
     </nav>
+    <button class="btn small hidden" type="button" id="accountbtn">Sign in</button>
     <div class="navstats" id="navstats"></div>
   </header>
   <main id="app" class="container"></main>
@@ -28,12 +30,16 @@
   <script src="js/engine/functions.js"></script>
   <script src="js/data/datasets.js"></script>
   <script src="js/engine/evaluator.js"></script>
+  <script src="js/data/datasets-tenant.js"></script>
   <script src="js/content/concepts.js"></script>
   <script src="js/content/exercises-1.js"></script>
   <script src="js/content/exercises-2.js"></script>
   <script src="js/content/exercises-3.js"></script>
+  <script src="js/content/exercises-4.js"></script>
+  <script src="js/content/exercises-5.js"></script>
   <script src="js/app/srs.js"></script>
   <script src="js/app/ui.js"></script>
   <script src="js/app/main.js"></script>
+  <script src="js/app/account.js"></script>
 </body>
 </html>

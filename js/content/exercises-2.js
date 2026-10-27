@@ -56,7 +56,7 @@
       choices: ['21', '5', '3', '0, because there is no by clause'],
       answer: 1,
       check: { kind: 'cell', row: 0, column: 'conns', value: 5 },
-      explanation: '`count()` counts rows (21 events), while `count(field)` counts only rows where the field is not null. `action_remote_ip` is set only on network events and WS-FIN-042 has five (Outlook, Chrome and three to 185.220.101.45). Without a by clause comp returns one summary row.',
+      explanation: '`count()` counts rows (21 events), while `count(field)` counts only rows where the field is not null. `action_remote_ip` is set only on network events and WS-FIN-042 has five (Outlook, Chrome and three to 192.0.2.45). Without a by clause comp returns one summary row.',
       docs: [fn('count_with_comp_stage', 'count()')],
     },
     {
@@ -107,15 +107,15 @@
     },
     {
       id: 'comp-07', concept: 'comp', type: 'cloze', difficulty: 3, title: 'First and last C2 contact',
-      task: 'For every host that talked to the C2 address 185.220.101.45, return when it first and last connected and how many connections it made.',
+      task: 'For every host that talked to the C2 address 192.0.2.45, return when it first and last connected and how many connections it made.',
       template: Q(`
         dataset = xdr_data
-        | filter action_remote_ip = "185.220.101.45"
+        | filter action_remote_ip = "192.0.2.45"
         | comp ___(_time) as first_seen, ___(_time) as last_seen, count() as conns by agent_hostname`),
       answers: [['min', 'earliest', 'first'], ['max', 'latest', 'last']],
       solution: Q(`
         dataset = xdr_data
-        | filter action_remote_ip = "185.220.101.45"
+        | filter action_remote_ip = "192.0.2.45"
         | comp min(_time) as first_seen, max(_time) as last_seen, count() as conns by agent_hostname`),
       explanation: '`min(_time)` and `max(_time)` are the standard first-seen / last-seen pair, because timestamps compare chronologically. WS-FIN-042 made three connections between 09:12:30 and 09:15:05 on 26 Oct; the other three hosts connected once.',
       docs: [fn('min_with_comp_stage', 'min()'), fn('max_with_comp_stage', 'max()')],
@@ -136,7 +136,7 @@
         | comp count_distinct(agent_hostname) as hosts, values(agent_hostname) as host_list by action_remote_ip
         | filter hosts > 1
         | sort desc hosts`),
-      explanation: '`count_distinct` counts unique hosts per destination and `values` collects the unique names into an array; `count` would count connections and `list` would repeat WS-FIN-042 three times for the C2. Only 185.220.101.45 (4 hosts) and Outlook\'s 52.96.166.98 (2 hosts) are shared.',
+      explanation: '`count_distinct` counts unique hosts per destination and `values` collects the unique names into an array; `count` would count connections and `list` would repeat WS-FIN-042 three times for the C2. Only 192.0.2.45 (4 hosts) and Outlook\'s 52.96.166.98 (2 hosts) are shared.',
       docs: [fn('count_distinct'), fn('values')],
     },
     {
@@ -152,7 +152,7 @@
         '`dataset = xdr_data | filter event_type = ENUM.NETWORK and action_country != null | comp count() as conns, ___(agent_hostname) as hosts, ___(action_total_upload) as upload_bytes by ___ | sort desc upload_bytes`',
         '`... | comp count() as conns, count_distinct(agent_hostname) as hosts, sum(action_total_upload) as upload_bytes by action_remote_ip | sort desc upload_bytes`',
       ],
-      explanation: '185.220.101.45 tops the list with 52,739,360 bytes from four hosts, almost all of it update.exe\'s 50 MB push to port 4444; the AnyDesk relay is second with 8 MB. Summing upload per destination is the quickest way to find an exfiltration channel.',
+      explanation: '192.0.2.45 tops the list with 52,739,360 bytes from four hosts, almost all of it update.exe\'s 50 MB push to port 4444; the AnyDesk relay is second with 8 MB. Summing upload per destination is the quickest way to find an exfiltration channel.',
       docs: [st('comp'), fn('sum_with_comp_stage', 'sum()')],
     },
     {
@@ -287,7 +287,7 @@
         | alter url_host = regextract(action_process_image_command_line, "https?://([^/ ]+)")
         | filter url_host != null
         | comp count() as cmds, values(agent_hostname) as hosts by url_host`),
-      explanation: '`regextract()` returns the first capture group (here the text between `://` and the next slash or space), or null when the pattern does not match, so `!= null` keeps only the matches. 185.220.101.45 appears in five command lines on four hosts: certutil, the web shell\'s cmd and PowerShell, curl and mshta.',
+      explanation: '`regextract()` returns the first capture group (here the text between `://` and the next slash or space), or null when the pattern does not match, so `!= null` keeps only the matches. 192.0.2.45 appears in five command lines on four hosts: certutil, the web shell\'s cmd and PowerShell, curl and mshta.',
       docs: [fn('regextract')],
     },
     {
@@ -306,7 +306,7 @@
         | alter user = json_extract_scalar(event_data, "$.TargetUserName"), logon_type = to_number(event_data -> LogonType)
         | filter logon_type = 3
         | comp count() as attempts by user, event_id`),
-      explanation: '`json_extract_scalar(json, "$.key")` and the `json -> key` shorthand both return text, so `to_number()` (or `to_integer()`) is needed before a numeric comparison. administrator has five network failures and one success, all from 185.220.101.45; svc_backup has two failures then a success from SRV-WEB-02.',
+      explanation: '`json_extract_scalar(json, "$.key")` and the `json -> key` shorthand both return text, so `to_number()` (or `to_integer()`) is needed before a numeric comparison. administrator has five network failures and one success, all from 192.0.2.45; svc_backup has two failures then a success from SRV-WEB-02.',
       docs: [fn('json_extract_scalar'), fn('to_number')],
     },
     {
@@ -323,7 +323,7 @@
         '`dataset = microsoft_windows_raw | filter event_id = 4625 | alter user = json_extract_scalar(event_data, "$.___"), src_ip = ___, workstation = ___ | comp count() as failures by user, src_ip, workstation | sort desc failures`',
         '`... | alter user = json_extract_scalar(event_data, "$.TargetUserName"), src_ip = json_extract_scalar(event_data, "$.IpAddress"), workstation = json_extract_scalar(event_data, "$.WorkstationName") | comp count() as failures by user, src_ip, workstation | sort desc failures`',
       ],
-      explanation: 'Five failures for administrator from 185.220.101.45 (workstation KALI), followed by a success at 21:59:41, is a successful brute force against the domain admin, about 15 minutes before the PsExec hop. JSON keys are case-sensitive, so `$.targetusername` would return null.',
+      explanation: 'Five failures for administrator from 192.0.2.45 (workstation KALI), followed by a success at 21:59:41, is a successful brute force against the domain admin, about 15 minutes before the PsExec hop. JSON keys are case-sensitive, so `$.targetusername` would return null.',
       docs: [fn('json_extract_scalar')],
     },
     {
@@ -340,7 +340,7 @@
         '`dataset = xdr_data | filter event_type = ENUM.NETWORK and action_total_upload > 1048576 | alter dest = concat(action_remote_ip, ":", ___(action_remote_port)), upload_mb = round(___), ratio = round(___) | fields agent_hostname, actor_process_image_name, dest, upload_mb, ratio | sort desc upload_mb`',
         '`... | alter dest = concat(action_remote_ip, ":", to_string(action_remote_port)), upload_mb = round(divide(action_total_upload, 1048576)), ratio = round(divide(action_total_upload, action_total_download)) | fields agent_hostname, actor_process_image_name, dest, upload_mb, ratio | sort desc upload_mb`',
       ],
-      explanation: 'An upload/download ratio far above 1 means the host sent much more than it received, the shape of exfiltration: update.exe pushed 50 MB to 185.220.101.45:4444 (ratio 50) and AnyDesk 8 MB to its relay (ratio 4). concat needs `to_string()` for the port, and `divide()` returns a decimal that `round()` turns into a whole number.',
+      explanation: 'An upload/download ratio far above 1 means the host sent much more than it received, the shape of exfiltration: update.exe pushed 50 MB to 192.0.2.45:4444 (ratio 50) and AnyDesk 8 MB to its relay (ratio 4). concat needs `to_string()` for the port, and `divide()` returns a decimal that `round()` turns into a whole number.',
       docs: [fn('concat'), fn('divide'), fn('round')],
     },
 
@@ -352,7 +352,7 @@
       query: Q(`
         config timeframe = 7d
         | dataset = xdr_data
-        | filter action_remote_ip = "185.220.101.45"
+        | filter action_remote_ip = "192.0.2.45"
         | bin _time span = 1h
         | comp count() as conns by _time
         | sort asc _time`),
@@ -387,7 +387,7 @@
       id: 'time-03', concept: 'time', type: 'predict', difficulty: 3, title: 'Argument order in timestamp_diff',
       query: Q(`
         dataset = xdr_data
-        | filter action_remote_ip = "185.220.101.45"
+        | filter action_remote_ip = "192.0.2.45"
         | comp min(_time) as first_seen, max(_time) as last_seen by agent_hostname
         | alter dwell_s = timestamp_diff(last_seen, first_seen, "SECOND")
         | sort desc dwell_s
@@ -468,17 +468,17 @@
     },
     {
       id: 'time-08', concept: 'time', type: 'cloze', difficulty: 4, title: 'How long since the last C2 contact',
-      task: 'For each host that contacted 185.220.101.45, show how many hours ago its last contact was, and the date of that contact as text (YYYY-MM-DD).',
+      task: 'For each host that contacted 192.0.2.45, show how many hours ago its last contact was, and the date of that contact as text (YYYY-MM-DD).',
       template: Q(`
         dataset = xdr_data
-        | filter action_remote_ip = "185.220.101.45"
+        | filter action_remote_ip = "192.0.2.45"
         | comp max(_time) as last_seen by agent_hostname
         | alter hours_ago = ___(current_time(), last_seen, "HOUR"), last_day = ___("%Y-%m-%d", last_seen)
         | sort asc hours_ago`),
       answers: [['timestamp_diff'], ['format_timestamp']],
       solution: Q(`
         dataset = xdr_data
-        | filter action_remote_ip = "185.220.101.45"
+        | filter action_remote_ip = "192.0.2.45"
         | comp max(_time) as last_seen by agent_hostname
         | alter hours_ago = timestamp_diff(current_time(), last_seen, "HOUR"), last_day = format_timestamp("%Y-%m-%d", last_seen)
         | sort asc hours_ago`),
@@ -566,7 +566,7 @@
       id: 'dedup-03', concept: 'dedup', type: 'predict', difficulty: 3, title: 'Which row survives by desc',
       query: Q(`
         dataset = xdr_data
-        | filter action_remote_ip = "185.220.101.45"
+        | filter action_remote_ip = "192.0.2.45"
         | dedup agent_hostname by desc _time
         | sort asc _time
         | fields agent_hostname, actor_process_image_name`),
@@ -698,7 +698,7 @@
         '`dataset = xdr_data | filter event_type = ENUM.NETWORK and action_remote_ip ___ "10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16" | fields _time, agent_hostname, action_remote_ip, action_remote_port, actor_process_image_name | dedup agent_hostname by ___ _time | sort desc _time`',
         '`... and action_remote_ip not incidr "10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16" | fields ... | dedup agent_hostname by desc _time | sort desc _time`',
       ],
-      explanation: '`not incidr` with all three RFC1918 ranges is a direct test for internet destinations (action_country happens to work in this tenant, but it is an enrichment, not a guarantee). For four of the six hosts the latest internet contact is 185.220.101.45, each from a different process.',
+      explanation: '`not incidr` with all three RFC1918 ranges is a direct test for internet destinations (action_country happens to work in this tenant, but it is an enrichment, not a guarantee). For four of the six hosts the latest internet contact is 192.0.2.45, each from a different process.',
       docs: [st('dedup'), fn('incidr')],
     },
 
@@ -730,14 +730,14 @@
       id: 'join-union-02', concept: 'join-union', type: 'predict', difficulty: 2, title: 'union appends rows',
       query: Q(`
         dataset = xdr_data
-        | filter action_remote_ip = "185.220.101.45"
+        | filter action_remote_ip = "192.0.2.45"
         | fields _time, agent_hostname
-        | union (dataset = panw_ngfw_traffic_raw | filter dest_ip = "185.220.101.45" | fields _time, source_ip)`),
+        | union (dataset = panw_ngfw_traffic_raw | filter dest_ip = "192.0.2.45" | fields _time, source_ip)`),
       prompt: 'How many rows does this return?',
-      choices: ['6', '12', '18', '36'],
+      choices: ['6', '13', '19', '42'],
       answer: 1,
-      check: { kind: 'rowCount', value: 12 },
-      explanation: 'union appends the sub-query\'s rows to the current ones: 6 endpoint connections plus 6 firewall sessions. It neither de-duplicates nor matches anything, and columns are merged by name, so `agent_hostname` is null on the firewall rows and `source_ip` is null on the endpoint rows.',
+      check: { kind: 'rowCount', value: 13 },
+      explanation: 'union appends the sub-query\'s rows to the current ones: 6 endpoint connections plus 7 firewall sessions (six on the on-prem firewall and one through Prisma Access). It neither de-duplicates nor matches anything, and columns are merged by name, so `agent_hostname` is null on the firewall rows and `source_ip` is null on the endpoint rows.',
       docs: [st('union')],
     },
     {
@@ -789,14 +789,14 @@
     },
     {
       id: 'join-union-06', concept: 'join-union', type: 'parsons', difficulty: 3, title: 'One timeline from two sources',
-      task: 'Build one timeline of every contact with 185.220.101.45 as seen by the endpoint agent and by the firewall, with the columns `_time`, `source` and `port`, oldest first.',
+      task: 'Build one timeline of every contact with 192.0.2.45 as seen by the endpoint agent and by the firewall, with the columns `_time`, `source` and `port`, oldest first.',
       solution: Q(`
         dataset = xdr_data
-        | filter action_remote_ip = "185.220.101.45"
+        | filter action_remote_ip = "192.0.2.45"
         | fields _time, agent_hostname as source, action_remote_port as port
-        | union (dataset = panw_ngfw_traffic_raw | filter dest_ip = "185.220.101.45" | fields _time, source_ip as source, dest_port as port)
+        | union (dataset = panw_ngfw_traffic_raw | filter dest_ip = "192.0.2.45" | fields _time, source_ip as source, dest_port as port)
         | sort asc _time`),
-      distractors: ['| union (dataset = panw_ngfw_traffic_raw | filter dest_ip = "185.220.101.45" | fields _time, source_ip, dest_port)'],
+      distractors: ['| union (dataset = panw_ngfw_traffic_raw | filter dest_ip = "192.0.2.45" | fields _time, source_ip, dest_port)'],
       explanation: 'union appends the firewall rows to the endpoint rows, and renaming both sides to `source` and `port` lines the columns up because union merges by name. union does not keep order, so the sort goes last: each endpoint connection is followed about a second later by the firewall session log.',
       docs: [st('union'), st('fields')],
     },
@@ -951,7 +951,7 @@
       prompt: 'This should save the hosts that contacted the C2 as a lookup for later queries. Click the broken line.',
       query: Q(`
         dataset = xdr_data
-        | filter action_remote_ip = "185.220.101.45"
+        | filter action_remote_ip = "192.0.2.45"
         | comp count() as conns, sum(action_total_upload) as upload_bytes by agent_hostname
         | target type = lookup c2_contacted_hosts
         | sort desc upload_bytes`),
@@ -959,7 +959,7 @@
       expectError: true,
       fix: Q(`
         dataset = xdr_data
-        | filter action_remote_ip = "185.220.101.45"
+        | filter action_remote_ip = "192.0.2.45"
         | comp count() as conns, sum(action_total_upload) as upload_bytes by agent_hostname
         | sort desc upload_bytes
         | target type = lookup c2_contacted_hosts`),
@@ -977,7 +977,7 @@
         | arrayexpand ports
         | sort asc ports`),
       distractors: ['| arrayexpand action_remote_port'],
-      explanation: '`values()` builds an array of distinct ports per (host, IP) pair, `array_length()` filters on its size, and arrayexpand turns the array back into one row per element, copying the other columns, in no particular order (hence the sort after it). Only WS-FIN-042 to 185.220.101.45 qualifies: 80 for the certutil download, 443 for the PowerShell beacon and 4444 for the upload.',
+      explanation: '`values()` builds an array of distinct ports per (host, IP) pair, `array_length()` filters on its size, and arrayexpand turns the array back into one row per element, copying the other columns, in no particular order (hence the sort after it). Only WS-FIN-042 to 192.0.2.45 qualifies: 80 for the certutil download, 443 for the PowerShell beacon and 4444 for the upload.',
       docs: [st('arrayexpand'), fn('array_length'), fn('values')],
     },
     {
@@ -1048,7 +1048,7 @@
         '`dataset = xdr_data | filter event_type = ENUM.NETWORK and action_remote_ip not incidr "10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16" | replacenull ___ = "direct-ip" | iploc action_remote_ip loc_country as ___, loc_city as ___ | comp count() as conns, count_distinct(agent_hostname) as hosts, sum(action_total_upload) as upload_bytes by action_remote_ip, dns_query_name, country, city | sort desc upload_bytes`',
         '`... | replacenull dns_query_name = "direct-ip" | iploc action_remote_ip loc_country as country, loc_city as city | comp count() as conns, count_distinct(agent_hostname) as hosts, sum(action_total_upload) as upload_bytes by action_remote_ip, dns_query_name, country, city | sort desc upload_bytes`',
       ],
-      explanation: 'Every other destination, even the AnyDesk relay and pastebin.com, was reached through a DNS name, while 185.220.101.45 (Frankfurt) was contacted by bare IP from four hosts and received 52.7 MB: direct-to-IP plus volume is a strong C2 signal. Running replacenull before comp turns the empty DNS names into a readable group value.',
+      explanation: 'Every other destination, even the AnyDesk relay and pastebin.com, was reached through a DNS name, while 192.0.2.45 (Frankfurt) was contacted by bare IP from four hosts and received 52.7 MB: direct-to-IP plus volume is a strong C2 signal. Running replacenull before comp turns the empty DNS names into a readable group value.',
       docs: [st('replacenull'), st('iploc'), fn('incidr')],
     },
   ]);

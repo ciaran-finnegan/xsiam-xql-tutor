@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Engine tests and exercise validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run tests
+        run: npm test
+      - name: Build the site
+        run: npm run build
+      - name: Check for secrets and private identifiers
+        run: node scripts/check-public.js
+        env:
+          CHECK_PUBLIC_PATTERNS: ${{ secrets.CHECK_PUBLIC_PATTERNS }}

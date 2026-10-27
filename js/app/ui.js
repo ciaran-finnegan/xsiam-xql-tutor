@@ -194,14 +194,14 @@
     let picked = null;
     const list = UI.choices(ex.choices, (i) => { picked = i; ctx.setCanCheck(true); [...list.children].forEach((b, j) => b.classList.toggle('selected', j === i)); });
     const el = h('div', null, h('div', { class: 'worked' }, h('div', { class: 'label' }, 'Worked example'), annotated, runBtn, runArea), h('div', { class: 'question' }, UI.rich(ex.prompt || 'Check your understanding:', 'p'), list));
-    return { el, check: () => { if (picked == null) return null; UI.lockChoices(list, ex.answer, picked); return { correct: picked === ex.answer, message: picked === ex.answer ? 'Correct.' : `Not quite. The answer is ${ex.answer + 1}.` }; }, reveal: () => UI.lockChoices(list, ex.answer, picked) };
+    return { el, check: () => { if (picked == null) return null; UI.lockChoices(list, ex.answer, picked); return { correct: picked === ex.answer, answer: picked, message: picked === ex.answer ? 'Correct.' : `Not quite. The answer is ${ex.answer + 1}.` }; }, reveal: () => UI.lockChoices(list, ex.answer, picked) };
   };
 
   R.mcq = (ex, ctx) => {
     let picked = null;
     const list = UI.choices(ex.choices, (i) => { picked = i; ctx.setCanCheck(true); [...list.children].forEach((b, j) => b.classList.toggle('selected', j === i)); });
     const el = h('div', null, ex.query ? UI.code(ex.query) : null, UI.rich(ex.prompt, 'p'), list);
-    return { el, check: () => { if (picked == null) return null; UI.lockChoices(list, ex.answer, picked); return { correct: picked === ex.answer, message: picked === ex.answer ? 'Correct.' : `Not quite. The answer is ${ex.answer + 1}.` }; }, reveal: () => UI.lockChoices(list, ex.answer, picked) };
+    return { el, check: () => { if (picked == null) return null; UI.lockChoices(list, ex.answer, picked); return { correct: picked === ex.answer, answer: picked, message: picked === ex.answer ? 'Correct.' : `Not quite. The answer is ${ex.answer + 1}.` }; }, reveal: () => UI.lockChoices(list, ex.answer, picked) };
   };
 
   R.predict = (ex, ctx) => {
@@ -210,7 +210,7 @@
     const after = h('div');
     const el = h('div', null, UI.code(ex.query), h('div', { class: 'tools' }, ctx.dataPeekButton()), UI.rich(ex.prompt, 'p'), list, after);
     const showRun = () => { after.innerHTML = ''; after.append(h('div', { class: 'label' }, 'Now run it and investigate'), UI.runBox(ex.query).el); };
-    return { el, check: () => { if (picked == null) return null; UI.lockChoices(list, ex.answer, picked); showRun(); return { correct: picked === ex.answer, message: picked === ex.answer ? 'Correct prediction.' : `Not quite. The answer is ${ex.answer + 1}. Step through the stages below to see why.` }; }, reveal: () => { UI.lockChoices(list, ex.answer, picked); showRun(); } };
+    return { el, check: () => { if (picked == null) return null; UI.lockChoices(list, ex.answer, picked); showRun(); return { correct: picked === ex.answer, answer: picked, message: picked === ex.answer ? 'Correct prediction.' : `Not quite. The answer is ${ex.answer + 1}. Step through the stages below to see why.` }; }, reveal: () => { UI.lockChoices(list, ex.answer, picked); showRun(); } };
   };
 
   R.bug = (ex, ctx) => {
@@ -224,7 +224,7 @@
       const run = UI.runBox(ex.query, { trace: false });
       after.append(h('div', { class: 'label' }, 'What the buggy query does'), run.el, h('div', { class: 'label' }, 'Fixed query'), UI.code(ex.fix), h('button', { class: 'btn ghost small', type: 'button', onClick: (e) => { e.target.replaceWith(UI.runBox(ex.fix, { trace: false }).el); } }, UI.icon('play'), ' Run the fix'));
     };
-    return { el, check: () => { if (picked == null) return null; reveal(); return { correct: picked === ex.bugLine, message: picked === ex.bugLine ? 'You found it.' : `Not that line. The bug is on line ${ex.bugLine + 1}.` }; }, reveal };
+    return { el, check: () => { if (picked == null) return null; reveal(); return { correct: picked === ex.bugLine, answer: picked, message: picked === ex.bugLine ? 'You found it.' : `Not that line. The bug is on line ${ex.bugLine + 1}.` }; }, reveal };
   };
 
   R.parsons = (ex, ctx) => {
@@ -259,8 +259,8 @@
         const cmp = XQL.compareResults(expected, res, { ordered: XQL.isOrdered(expected.ast) });
         const usedDistractor = placed.some((p) => p.distractor);
         after.append(UI.table(res, { max: 15 }));
-        if (cmp.ok && !usedDistractor) return { correct: true, message: 'Correct order: the query returns the expected result.' };
-        if (cmp.ok) return { correct: true, hard: true, message: `The result is right, but a line you included was not needed: ${placed.find((p) => p.distractor).text}` };
+        if (cmp.ok && !usedDistractor) return { correct: true, answer: q, message: 'Correct order: the query returns the expected result.' };
+        if (cmp.ok) return { correct: true, hard: true, answer: q, message: `The result is right, but a line you included was not needed: ${placed.find((p) => p.distractor).text}` };
         return { correct: false, message: `The query runs but ${cmp.reason}` };
       },
       reveal: () => { after.innerHTML = ''; after.append(h('div', { class: 'label' }, 'Solution'), UI.code(ex.solution)); },
@@ -298,7 +298,7 @@
         const expected = XQL.run(ex.solution);
         const cmp = XQL.compareResults(expected, res, { ordered: XQL.isOrdered(expected.ast) });
         after.append(UI.table(res, { max: 15 }));
-        if (cmp.ok) { inputs.forEach((inp) => { inp.classList.remove('bad'); inp.classList.add('ok'); }); return { correct: true, message: 'Correct: the query returns the expected result.' }; }
+        if (cmp.ok) { inputs.forEach((inp) => { inp.classList.remove('bad'); inp.classList.add('ok'); }); return { correct: true, answer: q, message: 'Correct: the query returns the expected result.' }; }
         return { correct: false, message: `The query runs but ${cmp.reason} Blanks marked in red differ from the expected answer.` };
       },
       reveal: () => { inputs.forEach((inp, i) => { inp.value = (ex.answers[i] || [''])[0]; inp.classList.add('ok'); inp.classList.remove('bad'); }); after.innerHTML = ''; after.append(h('div', { class: 'label' }, 'Solution'), UI.code(ex.solution)); },
@@ -336,7 +336,7 @@
         const ordered = XQL.isOrdered(expected.ast);
         const cmp = XQL.compareResults(expected, res, { ordered });
         const both = h('div', { class: 'compare' }, h('div', null, h('div', { class: 'label' }, 'Your result'), UI.table(res, { max: 12 })), h('div', null, h('div', { class: 'label' }, 'Expected result'), UI.table(expected, { max: 12 })));
-        if (cmp.ok) { after.append(h('div', { class: 'label' }, 'Your result'), UI.table(res, { max: 12 })); return { correct: true, message: `Correct: ${res.rows.length} row${res.rows.length === 1 ? '' : 's'}, matching the expected result${ordered ? ' in the right order' : ''}.` }; }
+        if (cmp.ok) { after.append(h('div', { class: 'label' }, 'Your result'), UI.table(res, { max: 12 })); return { correct: true, answer: q, message: `Correct: ${res.rows.length} row${res.rows.length === 1 ? '' : 's'}, matching the expected result${ordered ? ' in the right order' : ''}.` }; }
         after.append(both);
         let tip = '';
         if (cmp.kind === 'columns') tip = ' Use a fields stage (or comp aliases) so the output has exactly the requested columns.';

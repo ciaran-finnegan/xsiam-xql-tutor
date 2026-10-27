@@ -4,7 +4,7 @@
   const XQL = (root.XQL = root.XQL || {});
   const { XQLError } = XQL;
 
-  const STAGES = ['config', 'dataset', 'preset', 'cold_dataset', 'filter', 'fields', 'alter', 'comp', 'sort', 'limit', 'dedup', 'bin',
+  const STAGES = ['config', 'dataset', 'preset', 'cold_dataset', 'datamodel', 'filter', 'fields', 'alter', 'comp', 'sort', 'limit', 'dedup', 'bin',
     'join', 'union', 'replacenull', 'arrayexpand', 'top', 'target', 'view', 'tag', 'windowcomp', 'transaction', 'iploc', 'search',
     'call', 'pivot', 'transpose', 'getrole'];
   const UNSUPPORTED = { transaction: 1, iploc: 0, search: 1, call: 1, pivot: 1, transpose: 1, getrole: 1 };
@@ -91,6 +91,7 @@
       switch (name) {
         case 'config': return this.parseConfig(isFirst);
         case 'dataset': case 'preset': case 'cold_dataset': return this.parseDataset(name);
+        case 'datamodel': return this.parseDatamodel();
         case 'filter': return { kind: 'filter', expr: this.parseExpr() };
         case 'fields': return this.parseFields();
         case 'alter': return this.parseAlter();
@@ -168,6 +169,28 @@
       if (t.type !== 'ident' && t.type !== 'string') this.fail(`Expected a ${kw} name, for example: ${kw} = xdr_data`);
       this.next();
       return { kind: 'dataset', mode: kw, names: [t.value] };
+    }
+
+    parseDatamodel() {
+      // datamodel | datamodel dataset = name | datamodel dataset = * | datamodel dataset in (a, b)
+      const st = { kind: 'datamodel', names: null };
+      if (this.isKw('dataset')) {
+        this.next();
+        if (this.isKw('in')) {
+          this.next(); this.expectOp('(', 'after dataset in');
+          st.names = [];
+          do { const t = this.peek(); if (t.type !== 'ident' && t.type !== 'string') this.fail('Expected a dataset name'); this.next(); st.names.push(t.value); if (this.isOp(',')) { this.next(); continue; } break; } while (true);
+          this.expectOp(')');
+        } else {
+          this.expectOp('=', 'after dataset');
+          const t = this.peek();
+          if (t.type === 'op' && t.value === '*') { this.next(); st.names = null; }
+          else if (t.type === 'ident' || t.type === 'string') { this.next(); st.names = [t.value]; }
+          else this.fail('datamodel dataset expects a dataset name or *');
+        }
+      }
+      if (!this.stageEnd()) this.fail(`Unexpected ${this.describe(this.peek())} after datamodel. Syntax: datamodel dataset = <name> | datamodel dataset in (a, b) | datamodel`);
+      return st;
     }
 
     parseFieldName() {
@@ -539,9 +562,22 @@
       let e = this.parsePrimary();
       while (this.isOp('->')) {
         this.next();
+        // path segments: key, key.sub.key, ["key with dots"], [0], chained in any order
         let path = '';
-        if (this.isOp('[')) { this.next(); const s = this.peek(); if (s.type !== 'string') this.fail('Expected a quoted key inside -> [ ]'); this.next(); this.expectOp(']'); path = s.value; }
-        else path = this.expectIdent('a JSON path after ->');
+        let segments = 0;
+        for (;;) {
+          if (this.isOp('[')) {
+            this.next(); const s = this.peek();
+            if (s.type === 'string') { this.next(); path += `['${s.value}']`; }
+            else if (s.type === 'number' && Number.isInteger(s.value)) { this.next(); path += `[${s.value}]`; }
+            else this.fail('Expected a quoted key or an array index inside -> [ ]');
+            this.expectOp(']'); segments++; continue;
+          }
+          if (this.isOp('.') && segments) { this.next(); const id = this.expectIdent('a key after .'); path += '.' + id; segments++; continue; }
+          if (this.peek().type === 'ident' && !segments) { path += this.next().value; segments++; continue; }
+          break;
+        }
+        if (!segments) this.fail('Expected a JSON path after ->, for example field -> key or field -> ["key"]');
         let obj = false;
         if (this.isOp('{')) { this.next(); this.expectOp('}'); obj = true; }
         e = { t: 'call', name: obj ? 'json_extract' : 'json_extract_scalar', args: [e, { t: 'str', v: '$.' + path }], sugar: true };
@@ -577,6 +613,7 @@
           return { t: 'call', name: lower, args, pos: t.start };
         }
         if (/^enum\./i.test(t.value)) return { t: 'enum', name: t.value.slice(5).toUpperCase(), pos: t.start };
+        if (/^xdm_const\./i.test(t.value)) return { t: 'enum', name: t.value.slice(10).toUpperCase(), xdmConst: true, pos: t.start };
         return { t: 'field', name: t.value, pos: t.start };
       }
       if (t.type === 'op' && t.value === '*') { this.next(); return { t: 'field', name: '*', pos: t.start }; }
