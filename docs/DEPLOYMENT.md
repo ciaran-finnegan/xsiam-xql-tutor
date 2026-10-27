@@ -1,6 +1,6 @@
 # Deployment
 
-The public site at <https://xql.riskscope-consulting.com> is a single Cloudflare Worker: the static app is served
+The public site at <https://xql-tutor.riskscope-consulting.com> is a single Cloudflare Worker: the static app is served
 from `dist/` as Worker static assets, and the small accounts API under `/api/` runs in `server/worker.js`. Nothing else is
 needed to serve the tutor; without the API the app still works as a purely static site (every sign-in control hides itself).
 

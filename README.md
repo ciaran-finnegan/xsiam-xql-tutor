@@ -4,7 +4,7 @@ A small web app that teaches **Cortex XQL** (the query language of Palo Alto Net
 read and write queries. No build step, no dependencies, no account needed: everything runs in the browser against a fictional
 one-week tenant, and your written queries are graded by actually executing them.
 
-Use it at <https://xql.riskscope-consulting.com>, or run it locally:
+Use it at <https://xql-tutor.riskscope-consulting.com>, or run it locally:
 
 ```bash
 npm start
