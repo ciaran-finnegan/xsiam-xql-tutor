@@ -1,0 +1,11 @@
+{
+  "name": "xsiam-xql-tutor",
+  "version": "0.1.0",
+  "description": "Learn Cortex XQL (XSIAM / XDR) fast by reading and writing queries against sample data, with spaced repetition.",
+  "private": true,
+  "scripts": {
+    "start": "node serve.js",
+    "test": "node test/run.js"
+  },
+  "license": "MIT"
+}

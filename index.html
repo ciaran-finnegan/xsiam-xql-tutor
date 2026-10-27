@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>XQL Tutor</title>
+  <meta name="description" content="Learn Cortex XQL (XSIAM / XDR) by reading and writing queries against sample data, with spaced repetition.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f766e'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='white' font-family='monospace' font-weight='bold'%3E%7C%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#learn"><span class="logo">|</span> XQL Tutor <span class="muted small" id="cardcount"></span></a>
+    <nav>
+      <a href="#learn" data-view="learn">Learn</a>
+      <a href="#review" data-view="review">Review <span class="badge" id="duebadge" style="display:none">0</span></a>
+      <a href="#sandbox" data-view="sandbox">Sandbox</a>
+      <a href="#reference" data-view="reference">Reference</a>
+      <a href="#progress" data-view="progress">Progress</a>
+    </nav>
+    <div class="navstats" id="navstats"></div>
+  </header>
+  <main id="app" class="container"></main>
+  <footer class="foot muted small">Not affiliated with Palo Alto Networks. Syntax follows the public Cortex XQL reference; the sandbox runs a subset of XQL against fictional data.</footer>
+
+  <script src="js/engine/lexer.js"></script>
+  <script src="js/engine/parser.js"></script>
+  <script src="js/engine/functions.js"></script>
+  <script src="js/data/datasets.js"></script>
+  <script src="js/engine/evaluator.js"></script>
+  <script src="js/content/concepts.js"></script>
+  <script src="js/content/exercises-1.js"></script>
+  <script src="js/content/exercises-2.js"></script>
+  <script src="js/content/exercises-3.js"></script>
+  <script src="js/app/srs.js"></script>
+  <script src="js/app/ui.js"></script>
+  <script src="js/app/main.js"></script>
+</body>
+</html>
