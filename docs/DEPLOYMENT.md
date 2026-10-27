@@ -95,6 +95,5 @@ Points are awarded once per card after the server re-grades the submitted answer
 - `npx wrangler rollback` returns to the previous version; `npx wrangler versions list` shows the history.
 - `npx wrangler d1 execute xql-tutor --remote --command "SELECT COUNT(*) FROM users"` for ad-hoc checks.
 - Security headers for the static files come from `_headers` (strict CSP, HSTS, no framing); the API sets its own in
-  `server/worker.js`. Cloudflare Web Analytics' automatic beacon injection is blocked by that CSP, so either leave the zone's
-  automatic setup off for this hostname or add `https://static.cloudflareinsights.com` to `script-src` and
-  `https://cloudflareinsights.com` to `connect-src` if you want it.
+  `server/worker.js`. The CSP allows Cloudflare Web Analytics' beacon (`static.cloudflareinsights.com`, `cloudflareinsights.com`)
+  so the zone's automatic analytics keep working; remove those two hosts from `_headers` if you do not use it.

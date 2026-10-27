@@ -23,8 +23,9 @@ providers, and Cloudflare itself (report those to their owners).
 
 ## What is in place
 
-- No third-party JavaScript or CSS; everything is served from the site's own origin.
-- A strict Content Security Policy (`_headers`): scripts only from self, no inline scripts, no framing, no object
+- No third-party JavaScript or CSS except Cloudflare Web Analytics' cookieless beacon, which the CSP allows explicitly;
+  everything else is served from the site's own origin.
+- A strict Content Security Policy (`_headers`): scripts only from self and the analytics beacon host, no inline scripts, no framing, no object
   embeds, `connect-src` limited to the site's own API.
 - HSTS, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy` and `Cross-Origin-Opener-Policy`.
 - Passwordless sign-in only: one-time email codes and federated identity providers (authorization code with signed state,
