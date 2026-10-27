@@ -9,7 +9,7 @@ dist/                 built by `node build.js` from index.html, css/, js/, _head
 server/worker.js      routes /api/* to the handlers in server/api/, everything else to the assets binding
 server/lib.js         loads the same engine and exercise bank as the browser, grades answers, sessions, rate limits, crypto helpers
 schema.sql            the D1 tables (users, identities, sessions, otp_codes, rate_limits, card_results, scores)
-wrangler.jsonc        Worker name, account, custom domain, assets, D1 and email bindings, public vars
+wrangler.jsonc        Worker name, account, custom domain, assets, D1 binding, public vars (origin, sender, client ids)
 ```
 
 ## Deploying your own copy
@@ -50,16 +50,17 @@ configured the "Sign in" button and the leaderboard stay hidden.
 
 ### Email one-time codes
 
-Requires Cloudflare Email Sending (Email Service) on a domain in the same account. Enabling it on a zone adds the SPF and
-DKIM DNS records Cloudflare needs, so do this deliberately on a domain you control:
+Codes are sent through [Resend](https://resend.com) from `EMAIL_FROM`, an address on a domain verified in your Resend
+account. Create an API key with sending-only permission restricted to that domain, then:
 
 ```bash
-npx wrangler email sending enable example.com
+npx wrangler secret put RESEND_API_KEY
 ```
 
-Then set the sender address as a public var in `wrangler.jsonc` (`"EMAIL_FROM": "no-reply@example.com"`) and redeploy.
-Codes are six digits, hashed with `OTP_PEPPER` at rest, expire after 10 minutes, are single use, and are limited to three
-sends per address and ten per client network every 15 minutes, with five wrong guesses per code.
+and set `EMAIL_FROM` in `wrangler.jsonc`. The Worker also still supports a Cloudflare Email Sending binding named `EMAIL`
+(Workers Paid plan) if you prefer not to use Resend: add `"send_email": [{ "name": "EMAIL" }]` and leave `RESEND_API_KEY`
+unset. Codes are six digits, hashed with `OTP_PEPPER` at rest, expire after 10 minutes, are single use, and are limited to
+three sends per address and ten per client network every 15 minutes, with five wrong guesses per code.
 
 ### Federated sign-in (GitHub, Google, Microsoft)
 

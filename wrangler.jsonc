@@ -10,10 +10,10 @@
   "routes": [{ "pattern": "xql-tutor.riskscope-consulting.com", "custom_domain": true }],
   "assets": { "directory": "./dist", "binding": "ASSETS", "run_worker_first": ["/api/*"], "not_found_handling": "none" },
   "d1_databases": [{ "binding": "DB", "database_name": "xql-tutor", "database_id": "d98ca81f-3c0e-412c-91a6-e1e7ecdccdd4" }],
-  // Email one-time codes. Sending only works once a domain is onboarded to Email Sending and EMAIL_FROM is set.
-  "send_email": [{ "name": "EMAIL" }],
   "vars": {
     "APP_ORIGIN": "https://xql-tutor.riskscope-consulting.com",
+    // Email one-time codes are sent through Resend (secret RESEND_API_KEY) from this address on a verified domain.
+    "EMAIL_FROM": "no-reply@riskscope-consulting.com",
     // OAuth client ids are public by design; the matching *_CLIENT_SECRET values are Worker secrets.
     "GITHUB_CLIENT_ID": "Ov23li0l1wns136PN82a",
     "MICROSOFT_CLIENT_ID": "af7614de-8755-426e-b6a4-a4ae28161219",

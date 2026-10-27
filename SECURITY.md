@@ -2,7 +2,8 @@
 
 XQL Tutor is a static learning app plus a small Cloudflare Worker API (`server/`) for optional sign-in and the
 leaderboard. It handles no customer data: the datasets are fictional, learning progress lives in the visitor's
-browser, and the optional account stores only an email address (for one-time codes), a display handle and scores.
+browser, and the optional account stores only an email address or provider id, a display handle and scores. One-time codes are
+sent through Resend from a verified domain.
 
 ## Reporting a vulnerability
 

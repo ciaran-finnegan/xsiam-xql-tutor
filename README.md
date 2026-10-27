@@ -131,8 +131,7 @@ reference query, checks that each `predict` key matches what the engine returns,
 
 ## Accounts and leaderboard (optional)
 
-The published site offers passwordless sign-in (a one-time code by email, or GitHub, Google or Microsoft where the operator
-has configured them) so that correct answers earn points and appear on a leaderboard. The server re-grades every submitted
+The published site offers passwordless sign-in (a one-time code by email, or GitHub, Google or Microsoft) so that correct answers earn points and appear on a leaderboard. The server re-grades every submitted
 answer with the same engine before awarding points, once per card. The leaderboard shows handles only, never names or email
 addresses; accounts can be deleted from the Account page. Learning progress itself always stays in the browser, signed in or
 not. See `docs/DEPLOYMENT.md` for exactly what is stored.

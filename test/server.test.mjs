@@ -1,5 +1,5 @@
 // Server-side helpers: grading with the shared engine, handle rules, crypto helpers. Run with `node test/server.test.mjs`.
-import { XQL, exerciseById, gradeAnswer, pointsFor, validHandle, sha256Hex, hmacHex, timingSafeEqual, getCookie, cookie, normalizeEmail, validEmail, randomCode, firstName } from '../server/lib.js';
+import { XQL, exerciseById, gradeAnswer, pointsFor, validHandle, sha256Hex, hmacHex, timingSafeEqual, getCookie, cookie, normalizeEmail, validEmail, randomCode, firstName, emailConfigured, otpMessage } from '../server/lib.js';
 
 let passed = 0, failed = 0; const failures = [];
 const test = (name, fn) => Promise.resolve().then(fn).then(() => passed++, (e) => { failed++; failures.push({ name, e }); });
@@ -25,6 +25,8 @@ await test('first name extraction', () => { eq(firstName('Dwight K. Schrute'), '
 await test('sha256 and hmac are deterministic and distinct', async () => { eq(await sha256Hex('x'), await sha256Hex('x')); eq((await hmacHex('k', 'x')) !== (await hmacHex('k2', 'x')), true); });
 await test('timing safe equal', () => { eq(timingSafeEqual('abc', 'abc'), true); eq(timingSafeEqual('abc', 'abd'), false); eq(timingSafeEqual('abc', 'ab'), false); });
 await test('cookies round trip', () => { const c = cookie('xqlt_session', 'v', { maxAge: 10 }); eq(/HttpOnly/.test(c) && /Secure/.test(c) && /SameSite=Lax/.test(c), true); eq(getCookie(new Request('https://x/', { headers: { cookie: 'a=1; xqlt_session=v; b=2' } }), 'xqlt_session'), 'v'); });
+await test('email is configured only with a sender and a transport', () => { eq(emailConfigured({}), false); eq(emailConfigured({ EMAIL_FROM: 'a@b.co' }), false); eq(emailConfigured({ EMAIL_FROM: 'a@b.co', RESEND_API_KEY: 'x' }), true); eq(emailConfigured({ EMAIL_FROM: 'a@b.co', EMAIL: {} }), true); });
+await test('otp message carries the code and expiry', () => { const m = otpMessage({ APP_ORIGIN: 'https://x' }, 'a@b.co', '123456'); eq(m.subject.startsWith('123456'), true); eq(/10 minutes/.test(m.text), true); eq(m.to, 'a@b.co'); });
 await test('otp codes are six digits', () => { for (let i = 0; i < 50; i++) eq(/^\d{6}$/.test(randomCode()), true); });
 
 console.log(`server tests: ${passed} passed, ${failed} failed`);

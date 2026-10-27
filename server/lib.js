@@ -196,16 +196,30 @@ export async function awardPoints(db, userId, ex) {
 }
 
 // ---- email --------------------------------------------------------------------------------------------
-export function emailConfigured(env) { return !!(env.EMAIL && env.EMAIL_FROM); }
-export async function sendOtpEmail(env, to, code) {
+// One-time codes go out through Resend's HTTP API when RESEND_API_KEY is set, or through a Cloudflare Email Sending
+// binding named EMAIL as a fallback. EMAIL_FROM must be an address on a domain verified with whichever service is used.
+export function emailConfigured(env) { return !!(env.EMAIL_FROM && (env.RESEND_API_KEY || env.EMAIL)); }
+export function otpMessage(env, to, code) {
   const site = env.APP_ORIGIN || 'XQL Tutor';
-  await env.EMAIL.send({
-    from: { email: env.EMAIL_FROM, name: 'XQL Tutor' },
+  return {
     to,
     subject: `${code} is your XQL Tutor sign-in code`,
     text: `Your XQL Tutor sign-in code is ${code}. It expires in 10 minutes. If you did not request it, ignore this email.\n\n${site}`,
     html: `<p>Your XQL Tutor sign-in code is <strong style="font-size:1.4em;letter-spacing:2px">${code}</strong>.</p><p>It expires in 10 minutes. If you did not request it, ignore this email.</p><p style="color:#666">${site}</p>`,
-  });
+  };
+}
+export async function sendOtpEmail(env, to, code) {
+  const msg = otpMessage(env, to, code);
+  if (env.RESEND_API_KEY) {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${env.RESEND_API_KEY}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ from: `XQL Tutor <${env.EMAIL_FROM}>`, to: [msg.to], subject: msg.subject, text: msg.text, html: msg.html }),
+    });
+    if (!res.ok) { const body = await res.text().catch(() => ''); throw new Error(`resend ${res.status}: ${body.slice(0, 200)}`); }
+    return;
+  }
+  await env.EMAIL.send({ from: { email: env.EMAIL_FROM, name: 'XQL Tutor' }, to: msg.to, subject: msg.subject, text: msg.text, html: msg.html });
 }
 
 // ---- federated providers --------------------------------------------------------------------------------------
