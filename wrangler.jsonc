@@ -16,7 +16,8 @@
     "APP_ORIGIN": "https://xql-tutor.riskscope-consulting.com",
     // OAuth client ids are public by design; the matching *_CLIENT_SECRET values are Worker secrets.
     "GITHUB_CLIENT_ID": "Ov23li0l1wns136PN82a",
-    "MICROSOFT_CLIENT_ID": "af7614de-8755-426e-b6a4-a4ae28161219"
+    "MICROSOFT_CLIENT_ID": "af7614de-8755-426e-b6a4-a4ae28161219",
+    "GOOGLE_CLIENT_ID": "1054436603632-jtestlb7rj630gtfe37hua2j5ki1j97a.apps.googleusercontent.com"
   },
   "observability": { "enabled": true }
 }
