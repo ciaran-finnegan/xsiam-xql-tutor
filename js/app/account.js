@@ -126,7 +126,7 @@
       params.get('welcome') ? h('p', { class: 'verdict ok' }, `Welcome. Your handle is @${u.handle}; change it below if you like.`) : null,
       h('div', { class: 'strip' }, App.stat('Points', u.points || 0), App.stat('Cards solved', u.cards || 0), App.stat('Rank', u.rank || '–')),
       form,
-      h('h3', null, h('a', { href: 'privacy.html' }, 'Privacy')),
+      h('h3', null, h('a', { href: 'privacy' }, 'Privacy')),
       h('p', { class: 'muted' }, 'Stored on the server: your email address or provider id, your handle, your first name if a provider supplied one (never shown publicly), and the cards you solved with their points. Your learning progress and review schedule live only in this browser.'),
       h('div', { class: 'actions' },
         h('button', { class: 'btn', type: 'button', onClick: async () => { await api('/api/auth/logout', { method: 'POST' }); account.user = null; account.renderNav(); App.go('learn'); } }, 'Sign out'),

@@ -105,6 +105,7 @@ goes through each source in more detail: what it covers, which rules were taken 
 
 ```
 index.html            page shell; loads the scripts in order
+privacy.html          what the site stores, for visitors and identity providers
 css/styles.css        theme (dark and light), layout, components
 js/engine/            lexer.js, parser.js, functions.js, evaluator.js  (the XQL subset interpreter)
 js/data/datasets.js   the endpoint sample tenant and GeoIP table

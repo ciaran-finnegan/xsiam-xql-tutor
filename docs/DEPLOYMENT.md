@@ -63,7 +63,9 @@ sends per address and ten per client network every 15 minutes, with five wrong g
 
 ### Federated sign-in (GitHub, Google, Microsoft)
 
-Register an OAuth application with each provider you want, using these callback URLs on your origin:
+Register an OAuth application with each provider you want, using these callback URLs on your origin. Give each one the
+site's home page and `/privacy` as its privacy policy link; Google also needs the site's domain under authorized domains and the
+app published to production on the Audience page before accounts outside the project's test users can sign in:
 
 | Provider | Register at | Callback URL | Secrets |
 | --- | --- | --- | --- |
@@ -77,6 +79,8 @@ signature, audience, issuer, expiry and nonce against the provider's published k
 for the smallest scopes that return a verified email address and a first name (`read:user user:email`, `openid email profile`).
 
 ## What is stored and where
+
+The public summary for visitors is `privacy.html` (served at `/privacy`); keep it in step with this section.
 
 - In the visitor's browser only: learning progress and the review schedule (`localStorage`). This never leaves the browser.
 - In D1, only for people who sign in: email address (or the provider's subject id), the handle, a first name if a provider
