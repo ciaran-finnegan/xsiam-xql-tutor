@@ -102,13 +102,17 @@ export function firstName(name) {
   const n = String(name || '').trim().split(/\s+/)[0] || '';
   return n.replace(/[^A-Za-z0-9]/g, '').slice(0, 20);
 }
+// Prefer the name the provider gave us (a GitHub login, a first name) as-is; add a short suffix only on a clash.
 async function uniqueHandle(db, base) {
-  let root = (base || '').replace(/[^A-Za-z0-9_-]/g, '').replace(/^[_-]+/, '').slice(0, 12);
+  const clean = (base || '').replace(/[^A-Za-z0-9_-]/g, '').replace(/^[_-]+/, '');
+  const taken = async (h) => !!(await db.prepare('SELECT 1 FROM users WHERE handle = ?').bind(h).first());
+  const first = clean.slice(0, 20);
+  if (validHandle(first) && !(await taken(first))) return first;
+  let root = clean.slice(0, 15);
   if (root.length < 3) root = 'learner';
   for (let i = 0; i < 8; i++) {
     const candidate = `${root}-${randomHex(2)}`;
-    const hit = await db.prepare('SELECT 1 FROM users WHERE handle = ?').bind(candidate).first();
-    if (!hit && validHandle(candidate)) return candidate;
+    if (validHandle(candidate) && !(await taken(candidate))) return candidate;
   }
   return `learner-${randomHex(4)}`;
 }

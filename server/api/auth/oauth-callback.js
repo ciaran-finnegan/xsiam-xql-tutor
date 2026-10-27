@@ -25,7 +25,7 @@ export async function onRequestGet({ request, env, params }) {
   try {
     if (cfg.kind === 'github') identity = await githubIdentity(cfg, code);
     else identity = await oidcIdentity(cfg, code, verifier, nonce);
-  } catch (e) { return fail(`sign-in failed: ${e.message}`); }
+  } catch (e) { console.error('oauth callback failed', cfg.name, e && e.message); return fail(`sign-in failed: ${e.message}`); }
 
   const { user, created } = await findOrCreateIdentity(env.DB, cfg.name, identity.subject, identity.email, identity.name, identity.handle);
   const session = await createSession(env.DB, user.id);
@@ -38,7 +38,7 @@ export async function onRequestGet({ request, env, params }) {
 async function githubIdentity(cfg, code) {
   const tokenRes = await fetch(cfg.tokenUrl, { method: 'POST', headers: { accept: 'application/json', 'content-type': 'application/json', 'user-agent': 'xql-tutor' }, body: JSON.stringify({ client_id: cfg.clientId, client_secret: cfg.clientSecret, code, redirect_uri: cfg.redirect }) });
   const token = await tokenRes.json();
-  if (!token.access_token) throw new Error('no access token from GitHub');
+  if (!token.access_token) throw new Error(`no access token from GitHub (${token.error || tokenRes.status}${token.error_description ? ': ' + token.error_description : ''})`);
   const gh = { authorization: `Bearer ${token.access_token}`, accept: 'application/vnd.github+json', 'user-agent': 'xql-tutor' };
   const user = await (await fetch('https://api.github.com/user', { headers: gh })).json();
   if (!user.id) throw new Error('GitHub did not return a user');
@@ -55,7 +55,7 @@ async function oidcIdentity(cfg, code, verifier, nonce) {
   const form = new URLSearchParams({ grant_type: 'authorization_code', code, redirect_uri: cfg.redirect, client_id: cfg.clientId, client_secret: cfg.clientSecret, code_verifier: verifier });
   const tokenRes = await fetch(cfg.tokenUrl, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' }, body: form });
   const token = await tokenRes.json();
-  if (!token.id_token) throw new Error('no id_token from the provider');
+  if (!token.id_token) throw new Error(`no id_token from the provider (${token.error || tokenRes.status}${token.error_description ? ': ' + String(token.error_description).slice(0, 120) : ''})`);
   const claims = await verifyIdToken(cfg, token.id_token, nonce);
   const email = claims.email && (claims.email_verified !== false) ? normalizeEmail(claims.email) : (claims.preferred_username && claims.preferred_username.includes('@') ? normalizeEmail(claims.preferred_username) : null);
   const subject = cfg.name === 'microsoft' ? `${claims.tid}:${claims.oid || claims.sub}` : claims.sub;
